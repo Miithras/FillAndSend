@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ART Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+  :root{
+    --bg-0:#12151C; --bg-1:#1B212C; --bg-2:#232B38; --line:#2E3746;
+    --text-hi:#F2F4F7; --text-mid:#B7C0CE; --text-lo:#7C879A;
+    --yellow:#F5C400; --orange:#FF7A45; --teal:#2FB894; --danger:#FF5B5B;
+    --radius:14px; font-size:16px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ background:var(--bg-0); color:var(--text-hi); font-family:'Inter',system-ui,sans-serif; min-height:100vh; -webkit-tap-highlight-color:transparent; }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+  .disp{ font-family:'Barlow Condensed',sans-serif; font-weight:800; text-transform:uppercase; letter-spacing:0.02em; }
+  #app{ max-width:520px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; position:relative; }
+
+  header.topbar{ padding:16px 18px 12px 18px; border-bottom:1px solid var(--line); background:linear-gradient(180deg, var(--bg-1), var(--bg-0)); position:sticky; top:0; z-index:20; }
+  .brand{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .brand-title{ font-size:21px; letter-spacing:0.03em; }
+  .brand-title span{ color:var(--yellow); }
+  .brand-meta{ font-size:10px; color:var(--text-lo); font-family:'JetBrains Mono',monospace; letter-spacing:.03em; text-align:right; line-height:1.5; }
+  .brand-sub{ font-size:11px; color:var(--text-lo); font-family:'JetBrains Mono',monospace; letter-spacing:0.04em; margin-top:2px; }
+  .steps{ display:flex; gap:6px; }
+  .step{ flex:1; height:5px; border-radius:3px; background:var(--line); transition:background .3s; }
+  .step.done{ background:var(--yellow); }
+  .step.current{ background:var(--orange); }
+
+  main{ flex:1; padding:16px 18px 110px 18px; }
+
+  .doc-card{ background:var(--bg-1); border:1px solid var(--line); border-left:5px solid var(--accent, var(--yellow)); border-radius:var(--radius); padding:16px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:transform .15s; }
+  .doc-card.disabled{ opacity:.45; cursor:not-allowed; }
+  .doc-card:active:not(.disabled){ transform:scale(0.98); }
+  .doc-card h3{ font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:19px; text-transform:uppercase; letter-spacing:.02em; margin-bottom:4px;}
+  .doc-card p{ font-size:12.5px; color:var(--text-mid); line-height:1.4; }
+  .doc-card .arrow{ font-size:22px; color:var(--text-lo); margin-left:10px; }
+  .doc-card .tag{ font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--text-lo); margin-top:6px; display:block; }
+
+  .banner{ background:var(--bg-2); border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px; font-size:13px; color:var(--text-mid); margin-bottom:16px; line-height:1.5; }
+  .banner b{ color:var(--text-hi); }
+  .banner.warn{ border-color:#5A4A1C; background:#241F10; color:#E8CE7C; }
+  .banner.ok{ border-color:#1E4A3B; background:#0F241C; color:#8FE0C4; }
+  .banner button{ margin-top:8px; background:none; border:1px solid var(--yellow); color:var(--yellow); padding:6px 12px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; }
+
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:12px; color:var(--text-mid); margin-bottom:6px; text-transform:uppercase; letter-spacing:.03em; font-weight:600; }
+  .field input[type=text], .field input[type=date], .field input[type=time], .field input[type=email], .field textarea, .field select{
+    width:100%; background:var(--bg-1); border:1px solid var(--line); color:var(--text-hi); padding:12px 13px; border-radius:10px; font-size:15px; font-family:'Inter',sans-serif;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus{ outline:2px solid var(--yellow); outline-offset:1px; border-color:var(--yellow); }
+  .field textarea{ min-height:70px; resize:vertical; }
+  .field .hint{ font-size:11px; color:var(--text-lo); margin-top:5px; }
+
+  .accordion{ border:1px solid var(--line); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; background:var(--bg-1); }
+  .accordion-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px; cursor:pointer; }
+  .accordion-head h3{ font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15.5px; text-transform:uppercase; letter-spacing:.02em; }
+  .accordion-head .chev{ color:var(--text-lo); transition:transform .2s; font-size:14px; }
+  .accordion.open .chev{ transform:rotate(180deg); }
+  .accordion-body{ display:none; padding:0 16px 16px 16px; border-top:1px solid var(--line); }
+  .accordion.open .accordion-body{ display:block; padding-top:14px; }
+  .accordion-badge{ font-size:10px; font-family:'JetBrains Mono',monospace; padding:2px 7px; border-radius:6px; background:var(--bg-2); color:var(--text-lo); margin-right:8px; }
+  .accordion-badge.filled{ color:var(--teal); border:1px solid var(--teal); }
+
+  .tri-item{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); }
+  .tri-item:last-child{ border-bottom:none; }
+  .tri-item span{ font-size:12.5px; color:var(--text-mid); flex:1; line-height:1.35; }
+  .tri-btns{ display:flex; gap:4px; flex-shrink:0; }
+  .tri-btn{ width:34px; height:28px; border-radius:7px; border:1px solid var(--line); background:var(--bg-2); color:var(--text-lo); font-size:11px; font-weight:700; cursor:pointer; }
+  .tri-btn.active-si{ background:var(--teal); border-color:var(--teal); color:#06231A; }
+  .tri-btn.active-no{ background:var(--danger); border-color:var(--danger); color:#2A0808; }
+  .tri-btn.active-na{ background:var(--text-lo); border-color:var(--text-lo); color:#12151C; }
+
+  .chk-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .chk{ display:flex; align-items:center; gap:8px; background:var(--bg-2); border:1px solid var(--line); border-radius:10px; padding:9px 10px; cursor:pointer; }
+  .chk input{ width:16px; height:16px; accent-color:var(--yellow); flex-shrink:0; }
+  .chk span{ font-size:12px; color:var(--text-mid); }
+  .chk.checked{ border-color:var(--yellow); }
+  .chk.checked span{ color:var(--text-hi); }
+
+  .risk-row{ background:var(--bg-2); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; position:relative; }
+  .risk-row .del{ position:absolute; top:8px; right:8px; background:none; border:none; color:var(--text-lo); font-size:18px; cursor:pointer; padding:4px 8px; }
+  .risk-row .field{ margin-bottom:10px; }
+  .risk-row .field:last-child{ margin-bottom:0; }
+  .add-row-btn{ width:100%; background:var(--bg-2); border:1px dashed var(--line); color:var(--text-mid); padding:12px; border-radius:10px; font-size:13.5px; font-weight:600; cursor:pointer; margin-bottom:6px; }
+  .add-row-btn:active{ background:var(--bg-1); }
+
+  .signer-card{ background:var(--bg-1); border:1px solid var(--line); border-radius:var(--radius); padding:14px; margin-bottom:10px; display:flex; align-items:center; gap:12px; cursor:pointer; }
+  .signer-card.signed{ border-color:var(--teal); }
+  .signer-avatar{ width:38px; height:38px; border-radius:50%; background:var(--bg-2); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; border:1px solid var(--line); }
+  .signer-card.signed .signer-avatar{ background:rgba(47,184,148,.15); border-color:var(--teal); }
+  .signer-info{ flex:1; min-width:0; }
+  .signer-info .name{ font-weight:600; font-size:14.5px; }
+  .signer-info .rut{ font-size:12px; color:var(--text-lo); font-family:'JetBrains Mono',monospace; }
+  .signer-info .role{ font-size:11px; color:var(--text-lo); }
+  .signer-status{ font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; }
+  .signer-status.pending{ color:var(--orange); }
+  .signer-status.done{ color:var(--teal); }
+  .signer-del{ background:none; border:none; color:var(--text-lo); font-size:18px; cursor:pointer; padding:4px 6px; }
+
+  .gauge-wrap{ display:flex; flex-direction:column; align-items:center; padding:14px 0 6px 0; }
+  .gauge{ position:relative; width:150px; height:150px; }
+  .gauge svg{ transform:rotate(-90deg); }
+  .gauge-track{ fill:none; stroke:var(--line); stroke-width:10; }
+  .gauge-fill{ fill:none; stroke:var(--yellow); stroke-width:10; stroke-linecap:round; transition:stroke-dashoffset .5s ease; }
+  .gauge-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .gauge-center .num{ font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:34px; line-height:1; }
+  .gauge-center .lbl{ font-size:10px; color:var(--text-lo); text-transform:uppercase; letter-spacing:.05em; margin-top:2px; }
+
+  .btn-primary{ width:100%; background:var(--yellow); color:#1A1400; border:none; padding:15px; border-radius:12px; font-weight:700; font-size:15px; cursor:pointer; text-transform:uppercase; letter-spacing:.03em; font-family:'Barlow Condensed',sans-serif; }
+  .btn-primary:disabled{ background:var(--line); color:var(--text-lo); cursor:not-allowed; }
+  .btn-secondary{ width:100%; background:transparent; color:var(--text-mid); border:1px solid var(--line); padding:14px; border-radius:12px; font-weight:600; font-size:14px; cursor:pointer; margin-top:10px; }
+  .btn-secondary:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn-ghost{ background:none; border:none; color:var(--text-mid); font-size:13px; cursor:pointer; padding:8px; text-decoration:underline; }
+
+  footer.actionbar{ position:sticky; bottom:0; padding:14px 18px 20px 18px; background:linear-gradient(0deg, var(--bg-0) 60%, transparent); border-top:1px solid var(--line); }
+
+  .modal-overlay{ position:fixed; inset:0; background:rgba(8,10,14,.75); z-index:100; display:flex; align-items:flex-end; justify-content:center; }
+  .modal{ background:var(--bg-1); border-radius:20px 20px 0 0; width:100%; max-width:520px; padding:18px 18px 22px 18px; border-top:1px solid var(--line); }
+  .modal h3{ font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; font-size:18px; margin-bottom:4px; }
+  .modal p.sub{ font-size:12.5px; color:var(--text-mid); margin-bottom:12px; }
+  #sigCanvas{ width:100%; height:180px; background:#0E1116; border:1px solid var(--line); border-radius:12px; touch-action:none; }
+  .sig-actions{ display:flex; gap:10px; margin-top:10px; }
+  .sig-actions button{ flex:1; }
+
+  .toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--bg-2); border:1px solid var(--teal); color:var(--text-hi); padding:11px 18px; border-radius:10px; font-size:13px; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,.4); max-width:88%; text-align:center; }
+  .toast.err{ border-color:var(--danger); }
+
+  .review-block{ background:var(--bg-1); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; margin-bottom:12px; }
+  .review-block h4{ font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; font-size:14px; color:var(--yellow); margin-bottom:8px; letter-spacing:.03em; }
+  .review-row{ display:flex; justify-content:space-between; font-size:13px; padding:5px 0; border-bottom:1px solid var(--line); gap:10px; }
+  .review-row:last-child{ border-bottom:none; }
+  .review-row .k{ color:var(--text-lo); flex-shrink:0; }
+  .review-row .v{ color:var(--text-hi); text-align:right; }
+  .sig-thumb{ width:100%; height:60px; background:#fff; border-radius:8px; margin-top:6px; }
+
+  .back-link{ display:inline-flex; align-items:center; gap:5px; color:var(--text-mid); font-size:13px; background:none; border:none; cursor:pointer; margin-bottom:14px; padding:4px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* =====================================================================
+   CONFIGURACIÓN EMAILJS — completar con las credenciales de la cuenta
+   1. Crear cuenta en https://www.emailjs.com
+   2. Crear un "Service" (ej. Gmail) -> copiar Service ID
+   3. Crear un "Template" con variables: {{doc_titulo}} {{empresa}} {{obra}}
+      {{fecha}} {{supervisor}} {{resumen}} {{destinatario}} -> copiar Template ID
+   4. Copiar la Public Key desde Account > API Keys
+   ===================================================================== */
+const EMAILJS_CONFIG = {
+  publicKey: '5GDotQ8ukNmNdb2fh',
+  serviceId: 'service_tllnpvf',
+  templateId: ''   // <-- falta: crear un Template en EmailJS y pegar su ID aquí
+};
+const EMAILJS_READY = !!(EMAILJS_CONFIG.publicKey && EMAILJS_CONFIG.serviceId && EMAILJS_CONFIG.templateId);
+if(EMAILJS_READY && window.emailjs) emailjs.init(EMAILJS_CONFIG.publicKey);
+
+/* ============ DEFINICIÓN DE DOCUMENTOS (calcados de tus Excel) ============ */
+let DOC_TYPES = {
+  art_mantencion: {
+    label:'ART Mantención', accent:'var(--orange)', icon:'🔧', enabled:true,
+    desc:'Análisis de Riesgos en el Trabajo — Mantención (REG-009_B)',
+    meta:{ codigo:'REG-009_B', version:'06', fechaVersion:'03.06.2025' },
+    fields:[
+      {id:'supervisor', label:'Nombre del Supervisor o Encargado', type:'text', required:true},
+      {id:'movil', label:'Móvil', type:'text'},
+      {id:'usuario', label:'Usuario (Lugar/Obra)', type:'text', required:true},
+      {id:'cliente', label:'Cliente', type:'text', required:true},
+      {id:'fecha', label:'Fecha', type:'date', required:true},
+      {id:'tipoTarea', label:'Tipo de Tarea / Actividad', type:'textarea', required:true},
+      {id:'idTrabajo', label:'ID de Trabajo', type:'text'},
+      {id:'direccionObra', label:'Nombre y Dirección de Obra', type:'text'},
+    ],
+    triGroups:[
+      {title:'I. Verificación previa — pasos analizados', items:[
+        'Entrega de área por parte de Enel X a Colaborador','Se realizó autochequeo','Se realizó charla de seguridad',
+        'Se realizó ART','Se realizó registro de actividades complejas','Se aplicó entrega de área inmediata',
+        'Se aplicó las 5 reglas de oro para trabajos eléctricos']},
+      {title:'I. Verificación previa — temas tratados con el equipo', items:[
+        'Política de Stop Work','Preparación del área de trabajo','Riesgo Caída de Altura','Riesgo Obras Civiles (Calicatas)',
+        'Riesgo Eléctrico','Riesgo de caída de objetos','Riesgo en espacios confinados','Riesgo de Tránsito',
+        'Los colaboradores conocen los métodos de trabajo seguro','Chequeo de equipo de sujeción de cargas']},
+    ],
+    multiGroups:[
+      {title:'II. EPP y Elementos de Seguridad requeridos', items:[
+        'Casco de Seguridad Dieléctrico','Barbiquejo de 3 puntas','Linterna frontal','Zapatos de Seguridad Dieléctricos',
+        'Lentes de Seguridad','Guantes de Cabritilla','Guantes de Nitrilo','Guantes de Anti-vibración','Protección Auditiva',
+        'Careta Dieléctrica','Esclavina Ignífuga','Guantes Dieléctricos','Guantes Protector de Dieléctricos','Ropa Ignífuga',
+        'Detector de Tensión personal','Manta Dieléctrica','Tarjeta de bloqueo y/o candado','Arnés de Seguridad',
+        'Amortiguador de impacto','Cabo de vida','Careta Facial','Careta para soldar','Coleto de Cuero','Chaleco Reflectante',
+        'Legionario','Protector solar','Barreras (cinta, conos, barras)']},
+      {title:'III. Máquinas y/o Vehículos a utilizar', items:[
+        'Camión Pluma','Alzahombre','Brazo Articulado','Grúa Horquilla','Traspaleta','Placa Compactadora','Cango',
+        'Trompo','Testiguera','Tronzadora']},
+      {title:'IV. Aspectos Ambientales identificados', items:[
+        'Derrames','Aguas Servidas','Escombros','Emisión de Polvo','Despuntes de PVC','Restos de Cables']},
+      {title:'V. Actividades de Alto Riesgo', items:[
+        'Conducción de Vehículos','Trabajos en Altura (sobre 1,5 mts.)','Trabajos en Caliente','Carga suspendida / Izaje',
+        'Espacios confinados y/o cerrados','Electricidad','Trabajos de otras Empresas','Maquinaria en movimiento']},
+      {title:'IX. Visitas en Terreno', items:[
+        'Gerente General','Jefe de Operaciones','Supervisor General','Experto en Prevención RAYCA',
+        'Experto en Prevención CLIENTE','Experto en Prevención USUARIO','Área Proyecto','Gestor Técnico Cliente',
+        'Encargado de Mantención de cliente o usuario']},
+    ],
+    risks:{ enabled:true, title:'VI. Análisis de Riesgos en el Trabajo',
+      qEtapa:'¿Qué voy a hacer? (etapa del trabajo)', qEvento:'¿Cómo me podría accidentar?', qMedida:'¿Qué haré para evitarlo?' },
+    incidentes:{ enabled:true, title:'VIII. Incidentes durante las actividades',
+      items:['Incidente Seguridad','Incidente Ambiental','Incidente Calidad','Near Miss','Stop Work'] },
+    finalFields:[
+      {id:'eventualidades', label:'X. Eventualidades', type:'textarea'},
+    ],
+    signerSchema:{ rutRequired:true, extra:[{id:'cargo', label:'Cargo'},{id:'tareas', label:'Tareas Asignadas'}] },
+    closing:{ enabled:true, title:'Cierre — Supervisor o Encargado', roleField:{id:'cargo', label:'Cargo'} },
+  },
+
+  charla_inicial: {
+    label:'Charla Inicial', accent:'var(--teal)', icon:'🗣️', enabled:true,
+    desc:'Charla de seguridad inicial (5 minutos) — REG-010',
+    meta:{ codigo:'REG-010', version:'06', fechaVersion:'03.06.2025' },
+    fields:[
+      {id:'instructor', label:'Nombre de quién dictó la charla', type:'text', required:true},
+      {id:'usuario', label:'Usuario (Lugar)', type:'text', required:true},
+      {id:'fecha', label:'Fecha', type:'date', required:true},
+      {id:'cliente', label:'Cliente', type:'text'},
+      {id:'horaInicio', label:'Hora Inicio', type:'time'},
+      {id:'horaTermino', label:'Hora Término', type:'time'},
+      {id:'tema', label:'Tema Tratado', type:'textarea', required:true},
+    ],
+    triGroups:[],
+    multiGroups:[
+      {title:'Clasificación del tema', items:[
+        'Orientación en Prevención de Riesgos','Elementos de Protección Personal','Uso y buen uso de equipos y herramientas',
+        'Análisis de Riesgos en el Trabajo','Normas de Seguridad','Prevención y Amago de Incendios','Análisis de Accidentes',
+        'Primeros Auxilios','Exposición a Riesgos Eléctricos','Exposición a Riesgos Específicos',
+        'Trabajo en Altura Física y Geográfica','Manejo Manual de Carga','Medio Ambiente',
+        'Manejo y Almacenamiento de Materiales','Aspectos Legales']},
+    ],
+    risks:{ enabled:false },
+    incidentes:{ enabled:false },
+    finalFields:[
+      {id:'mutual', label:'Mutual de Seguridad o Centro Asistencial más cercano', type:'text'},
+      {id:'comentarios', label:'Comentarios, observaciones o sugerencias', type:'textarea'},
+    ],
+    signerSchema:{ rutRequired:false, extra:[] },
+    closing:{ enabled:true, title:'Firma de quién dictó la charla', roleField:null },
+  },
+
+};
+
+/* ART Normal (REG-009_A) tiene exactamente la misma estructura que ART Mantención
+   (REG-009_B) — se genera clonando el esquema y cambiando solo metadatos. */
+DOC_TYPES.art_normal = JSON.parse(JSON.stringify(DOC_TYPES.art_mantencion));
+DOC_TYPES.art_normal.label = 'ART Normal';
+DOC_TYPES.art_normal.accent = 'var(--yellow)';
+DOC_TYPES.art_normal.icon = '⚠';
+DOC_TYPES.art_normal.enabled = true;
+DOC_TYPES.art_normal.desc = 'Análisis de Riesgos en el Trabajo — General (REG-009_A)';
+DOC_TYPES.art_normal.meta = { codigo:'REG-009_A', version:'06', fechaVersion:'03.06.2025' };
+
+// Orden de aparición en la pantalla de selección
+DOC_TYPES = {
+  charla_inicial: DOC_TYPES.charla_inicial,
+  art_normal: DOC_TYPES.art_normal,
+  art_mantencion: DOC_TYPES.art_mantencion,
+};
+
+/* ============ BASE DE TRABAJADORES (para autocompletar al agregar firmantes) ============
+   Precargada con los nombres que aparecían en tus Excel de ejemplo. Súbeme el listado
+   completo de la empresa cuando lo tengas (nombre, RUT, cargo) y lo reemplazo/actualizo. */
+const WORKERS_DB = [
+  {nombre:'Nicolás Antonio Riquelme Camus', rut:'18718406-1', cargo:'Jefe de Operaciones'},
+  {nombre:'Cristopher Alexander Pérez Duyvestein', rut:'19428998-7', cargo:'Ingeniero Proyectista'},
+  {nombre:'Luis Alfredo Gómez Olea', rut:'13075709-K', cargo:'Técnico en Terreno'},
+  {nombre:'René Antonio Valenzuela Fuentes', rut:'12493325-0', cargo:'Supervisor y Téc. en Terreno'},
+  {nombre:'Mauricio Ignacio San Martín Opazo', rut:'19228823-1', cargo:'Supervisor en terreno y administrativo'},
+  {nombre:'Vicente Alejandro Muñoz Tirado', rut:'21849746-5', cargo:'Técnico en Terreno'},
+  {nombre:'Cristian Humberto Caamaño Saavedra', rut:'15442154-8', cargo:'Técnico en Terreno'},
+  {nombre:'Krishna Camila Figueroa Iturra', rut:'20642879-1', cargo:'Técnico en Terreno'},
+  {nombre:'Bastian Andres Muñoz Silva', rut:'20448293-4', cargo:'Ayudante Eléctrico'},
+  {nombre:'Isan Eros Villalobos Becerra', rut:'18976776-5', cargo:'Ayudante Eléctrico'},
+  {nombre:'Carlos Eduardo Castillo Reyes', rut:'19693703-K', cargo:'Ayudante Eléctrico'},
+  {nombre:'Ruben Carlos Jobre Miranda', rut:'18541148-6', cargo:'Jefe SST - MA'},
+  {nombre:'Miguel Alejandro Ramírez Alarcón', rut:'19500321-1', cargo:'Jefe de Proyectos'},
+  {nombre:'Cristóbal Ignacio Peña Roa', rut:'20225360-1', cargo:'Proyectista Eléctrico'},
+  {nombre:'Rafael Alexis Garcia Figueroa', rut:'14056529-6', cargo:'Gerente General'},
+  {nombre:'Duvan Maximiliano Pineda Rivera', rut:'19561125-4', cargo:'Ayudante Eléctrico'},
+  {nombre:'Juan Felipe Reyes Molina', rut:'20783901-9', cargo:'Ayudante Eléctrico'},
+  {nombre:'Ariel Fernando Bravo Bruna', rut:'16518607-9', cargo:'Ayudante Eléctrico'},
+];
+function findWorker(name){
+  const n = (name||'').trim().toLowerCase();
+  return WORKERS_DB.find(w=>w.nombre.toLowerCase()===n);
+}
+
+/* ============ ESTADO ============ */
+let state = {
+  screen:'select',
+  docType:null,
+  form:{}, tri:{}, multi:{}, risks:[], final:{},
+  signers:[],
+  closingSig:null,
+  destinatario:'',
+  sendStatus:null, // null | 'sending' | 'sent' | 'error'
+};
+const DRAFT_KEY = 'art-current-draft';
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function currentDoc(){ return DOC_TYPES[state.docType]; }
+
+/* ============ PERSISTENCIA ============ */
+async function saveDraft(){ try{ await window.storage.set(DRAFT_KEY, JSON.stringify(state), false); }catch(e){} }
+async function loadDraft(){ try{ const r = await window.storage.get(DRAFT_KEY, false); return r?JSON.parse(r.value):null; }catch(e){ return null; } }
+async function clearDraft(){ try{ await window.storage.delete(DRAFT_KEY, false); }catch(e){} }
+
+/* ============ RUT CHILENO ============ */
+function limpiarRut(rut){ return (rut||'').replace(/[^0-9kK]/g,'').toUpperCase(); }
+function formatearRut(rut){
+  const limpio = limpiarRut(rut);
+  if(limpio.length < 2) return limpio;
+  const cuerpo = limpio.slice(0,-1), dv = limpio.slice(-1);
+  return cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g,'.') + '-' + dv;
+}
+function validarRut(rut){
+  const limpio = limpiarRut(rut);
+  if(limpio.length < 2) return false;
+  const cuerpo = limpio.slice(0,-1), dvIngresado = limpio.slice(-1);
+  let suma = 0, multiplo = 2;
+  for(let i = cuerpo.length - 1; i >= 0; i--){ suma += parseInt(cuerpo[i]) * multiplo; multiplo = multiplo===7?2:multiplo+1; }
+  const resto = 11 - (suma % 11);
+  const dvCalculado = resto===11?'0':resto===10?'K':String(resto);
+  return dvCalculado === dvIngresado;
+}
+
+/* ============ RENDER ============ */
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = topbarHTML() + '<main>' + screenHTML() + '</main>' + actionbarHTML();
+  attachHandlers();
+}
+function stepIndex(){ return ['select','form','signers','review'].indexOf(state.screen); }
+
+function topbarHTML(){
+  const steps = ['select','form','signers','review'];
+  const idx = stepIndex();
+  const dots = steps.map((s,i)=>{ let c='step'; if(i<idx) c+=' done'; else if(i===idx) c+=' current'; return `<div class="${c}"></div>`; }).join('');
+  const doc = state.docType ? currentDoc() : null;
+  const metaHTML = doc ? `<div class="brand-meta">${doc.meta.codigo}<br>v${doc.meta.version}</div>` : '';
+  return `
+  <header class="topbar">
+    <div class="brand">
+      <div>
+        <div class="brand-title disp">ART <span>Digital</span></div>
+        <div class="brand-sub">${doc?doc.label.toUpperCase():'SELECCIONA DOCUMENTO'}</div>
+      </div>
+      ${metaHTML}
+    </div>
+    <div class="steps">${dots}</div>
+  </header>`;
+}
+
+function screenHTML(){
+  switch(state.screen){
+    case 'select': return selectScreen();
+    case 'form': return formScreen();
+    case 'signers': return signersScreen();
+    case 'review': return reviewScreen();
+    default: return '';
+  }
+}
+
+/* ---------- 1. SELECCIÓN ---------- */
+function selectScreen(){
+  let draftBanner = '';
+  if(window.__hasDraft){
+    draftBanner = `<div class="banner warn"><b>Tienes un borrador guardado.</b>
+      <div><button id="btnContinueDraft">Continuar</button>
+      <button id="btnDiscardDraft" style="border-color:var(--danger);color:var(--danger);margin-left:8px;">Descartar</button></div></div>`;
+  }
+  const cards = Object.entries(DOC_TYPES).map(([key,d])=>`
+    <div class="doc-card ${d.enabled?'':'disabled'}" style="--accent:${d.accent}" ${d.enabled?`data-doc="${key}"`:''}>
+      <div>
+        <h3>${d.icon} ${d.label}</h3>
+        <p>${d.desc}</p>
+        <span class="tag">${d.meta.codigo} · v${d.meta.version}</span>
+      </div>
+      <div class="arrow">${d.enabled?'›':'🔒'}</div>
+    </div>`).join('');
+  return `
+    ${draftBanner}
+    <div class="section-title" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;text-transform:uppercase;margin-bottom:10px;">¿Qué documento vas a llenar?</div>
+    ${cards}`;
+}
+
+/* ---------- 2. FORMULARIO ---------- */
+function fieldHTML(f, container, val){
+  val = val || '';
+  if(f.type==='textarea'){
+    return `<div class="field"><label>${f.label}${f.required?' *':''}</label><textarea data-${container}="${f.id}" placeholder="Escribe aquí">${val}</textarea></div>`;
+  }
+  return `<div class="field"><label>${f.label}${f.required?' *':''}</label><input type="${f.type}" data-${container}="${f.id}" value="${val}"></div>`;
+}
+
+function accordionCount(items, valuesObj, prefix){
+  return items.filter(it=>valuesObj[prefix+it]).length;
+}
+
+function formScreen(){
+  const doc = currentDoc();
+  let html = `<button class="back-link" id="btnBackToSelect">‹ Cambiar tipo de documento</button>`;
+  html += `<div class="banner">Formulario calcado de ${doc.meta.codigo} v${doc.meta.version}.</div>`;
+
+  html += `<div class="accordion open" data-acc="datos"><div class="accordion-head"><h3>Datos Generales</h3><span class="chev">▾</span></div><div class="accordion-body">`;
+  html += doc.fields.map(f=>fieldHTML(f,'field', state.form[f.id])).join('');
+  html += `</div></div>`;
+
+  (doc.triGroups||[]).forEach((g,gi)=>{
+    const filled = g.items.filter(it=>state.tri[gi+':'+it]).length;
+    html += `<div class="accordion" data-acc="tri${gi}"><div class="accordion-head"><h3>${g.title}</h3>
+      <div style="display:flex;align-items:center;"><span class="accordion-badge ${filled===g.items.length?'filled':''}">${filled}/${g.items.length}</span><span class="chev">▾</span></div></div>
+      <div class="accordion-body">`;
+    html += g.items.map(it=>{
+      const key = gi+':'+it; const cur = state.tri[key];
+      return `<div class="tri-item"><span>${it}</span><div class="tri-btns">
+        <button class="tri-btn ${cur==='SI'?'active-si':''}" data-tri="${key}" data-val="SI">SI</button>
+        <button class="tri-btn ${cur==='NO'?'active-no':''}" data-tri="${key}" data-val="NO">NO</button>
+        <button class="tri-btn ${cur==='NA'?'active-na':''}" data-tri="${key}" data-val="NA">N/A</button>
+      </div></div>`;
+    }).join('');
+    html += `</div></div>`;
+  });
+
+  (doc.multiGroups||[]).forEach((g,gi)=>{
+    const filled = g.items.filter(it=>state.multi[gi+':'+it]).length;
+    html += `<div class="accordion" data-acc="multi${gi}"><div class="accordion-head"><h3>${g.title}</h3>
+      <div style="display:flex;align-items:center;"><span class="accordion-badge ${filled?'filled':''}">${filled}</span><span class="chev">▾</span></div></div>
+      <div class="accordion-body"><div class="chk-grid">`;
+    html += g.items.map(it=>{
+      const key = gi+':'+it; const checked = !!state.multi[key];
+      return `<label class="chk ${checked?'checked':''}" data-multi="${key}"><input type="checkbox" ${checked?'checked':''}><span>${it}</span></label>`;
+    }).join('');
+    html += `</div></div></div>`;
+  });
+
+  if(doc.risks && doc.risks.enabled){
+    html += `<div class="accordion open" data-acc="risks"><div class="accordion-head"><h3>${doc.risks.title}</h3>
+      <div style="display:flex;align-items:center;"><span class="accordion-badge ${state.risks.length?'filled':''}">${state.risks.length}</span><span class="chev">▾</span></div></div>
+      <div class="accordion-body">`;
+    html += state.risks.map((r,i)=>`
+      <div class="risk-row" data-risk-index="${i}">
+        <button class="del" data-del-risk="${i}">✕</button>
+        <div class="field"><label>${doc.risks.qEtapa}</label><input type="text" data-risk="etapa" data-i="${i}" value="${r.etapa}"></div>
+        <div class="field"><label>${doc.risks.qEvento}</label><input type="text" data-risk="evento" data-i="${i}" value="${r.evento}"></div>
+        <div class="field"><label>${doc.risks.qMedida}</label><input type="text" data-risk="medida" data-i="${i}" value="${r.medida}"></div>
+      </div>`).join('');
+    html += `<button class="add-row-btn" id="btnAddRisk">+ Agregar etapa / riesgo</button></div></div>`;
+  }
+
+  if(doc.incidentes && doc.incidentes.enabled){
+    const filled = doc.incidentes.items.filter(it=>state.multi['inc:'+it]).length;
+    html += `<div class="accordion" data-acc="inc"><div class="accordion-head"><h3>${doc.incidentes.title}</h3>
+      <div style="display:flex;align-items:center;"><span class="accordion-badge ${filled?'filled':''}">${filled}</span><span class="chev">▾</span></div></div>
+      <div class="accordion-body"><div class="chk-grid">`;
+    html += doc.incidentes.items.map(it=>{
+      const key = 'inc:'+it; const checked = !!state.multi[key];
+      return `<label class="chk ${checked?'checked':''}" data-multi="${key}"><input type="checkbox" ${checked?'checked':''}><span>${it}</span></label>`;
+    }).join('');
+    html += `</div>
+      <div class="field" style="margin-top:12px;"><label>Breve descripción</label><textarea data-final="incidenteDesc">${state.final.incidenteDesc||''}</textarea></div>
+      <div class="field"><label>Acción correctiva en terreno</label><textarea data-final="accionCorrectiva">${state.final.accionCorrectiva||''}</textarea></div>
+      </div></div>`;
+  }
+
+  if(doc.finalFields && doc.finalFields.length){
+    html += `<div class="accordion" data-acc="finalf"><div class="accordion-head"><h3>Notas finales</h3><span class="chev">▾</span></div><div class="accordion-body">`;
+    html += doc.finalFields.map(f=>fieldHTML(f,'final', state.final[f.id])).join('');
+    html += `</div></div>`;
+  }
+
+  return html;
+}
+
+/* ---------- 3. FIRMANTES ---------- */
+function signersScreen(){
+  const doc = currentDoc();
+  const total = state.signers.length;
+  const done = state.signers.filter(s=>s.firma).length;
+  const pct = total ? done/total : 0;
+  const circumference = 2*Math.PI*65;
+  const offset = circumference * (1-pct);
+  const schema = doc.signerSchema;
+
+  const list = state.signers.map((s,i)=>{
+    const signed = !!s.firma;
+    const roleLine = schema.extra.length ? `<div class="role">${schema.extra.map(ef=>s[ef.id]).filter(Boolean).join(' · ')}</div>` : '';
+    return `
+    <div class="signer-card ${signed?'signed':''}" data-signer-index="${i}">
+      <div class="signer-avatar">${signed?'✓':'👤'}</div>
+      <div class="signer-info">
+        <div class="name">${s.nombre || '(sin nombre)'}</div>
+        ${schema.rutRequired?`<div class="rut">${s.rut ? formatearRut(s.rut) : 'RUT pendiente'}</div>`:''}
+        ${roleLine}
+      </div>
+      <div class="signer-status ${signed?'done':'pending'}">${signed?'Firmado':'Pendiente'}</div>
+      <button class="signer-del" data-del-signer="${i}" title="Eliminar">✕</button>
+    </div>`;
+  }).join('');
+  const clearAllBtn = state.signers.length ? `<button class="btn-ghost" id="btnClearAllSigners" style="display:block;margin:0 0 12px auto;color:var(--danger);">Eliminar a todos</button>` : '';
+
+  const extraFieldsHTML = schema.extra.map(ef=>`
+    <div class="field"><label>${ef.label}</label><input type="text" id="new_${ef.id}" placeholder="${ef.label}"></div>
+  `).join('');
+
+  const closingHTML = doc.closing && doc.closing.enabled ? `
+    <div class="section-title" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;text-transform:uppercase;margin:22px 0 10px;">${doc.closing.title}</div>
+    <div class="signer-card ${state.closingSig && state.closingSig.firma ? 'signed':''}" id="closingCard">
+      <div class="signer-avatar">${state.closingSig && state.closingSig.firma?'✓':'✍️'}</div>
+      <div class="signer-info">
+        <div class="name">${state.closingSig ? state.closingSig.nombre : 'Toca para registrar firma de cierre'}</div>
+        ${doc.closing.roleField && state.closingSig ? `<div class="role">${state.closingSig[doc.closing.roleField.id]||''}</div>`:''}
+      </div>
+      <div class="signer-status ${state.closingSig && state.closingSig.firma?'done':'pending'}">${state.closingSig && state.closingSig.firma?'Firmado':'Pendiente'}</div>
+    </div>` : '';
+
+  return `
+    <button class="back-link" id="btnBackToForm">‹ Volver al formulario</button>
+    <div class="gauge-wrap">
+      <div class="gauge">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle class="gauge-track" cx="75" cy="75" r="65"></circle>
+          <circle class="gauge-fill" cx="75" cy="75" r="65" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
+        </svg>
+        <div class="gauge-center"><div class="num">${done}/${total}</div><div class="lbl">Firmados</div></div>
+      </div>
+    </div>
+    <div class="section-title" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;text-transform:uppercase;margin-bottom:10px;">Integrantes</div>
+    ${list || '<div class="banner">Aún no agregas integrantes.</div>'}
+    ${clearAllBtn}
+
+    <div class="field" style="margin-top:14px;"><label>Agregar integrante — nombre</label>
+      <input type="text" id="newName" placeholder="Escribe o elige de la lista" list="workersDatalist">
+      <datalist id="workersDatalist">${WORKERS_DB.map(w=>`<option value="${w.nombre}">`).join('')}</datalist>
+      <div class="hint">Si eliges a alguien de la lista, RUT y cargo se autocompletan.</div>
+    </div>
+    ${schema.rutRequired ? `<div class="field"><label>RUT</label><input type="text" id="newRut" placeholder="12.345.678-9"><div class="hint" id="rutHint">Formato: 12.345.678-9</div></div>` : ''}
+    ${extraFieldsHTML}
+    <button class="add-row-btn" id="btnAddSigner">+ Agregar a la lista</button>
+    ${closingHTML}
+  `;
+}
+
+/* ---------- 4. REVISIÓN Y ENVÍO ---------- */
+function reviewScreen(){
+  const doc = currentDoc();
+  const f = state.form;
+  const allSigned = state.signers.length>0 && state.signers.every(s=>s.firma);
+  const closingOk = !doc.closing || !doc.closing.enabled || (state.closingSig && state.closingSig.firma);
+  const ready = allSigned && closingOk;
+
+  const genRows = doc.fields.map(fd=>`<div class="review-row"><span class="k">${fd.label}</span><span class="v">${f[fd.id]||'—'}</span></div>`).join('');
+
+  const riskRows = (doc.risks && doc.risks.enabled) ? (state.risks.map((r,i)=>`
+    <div class="review-row"><span class="k">${r.etapa||'Etapa '+(i+1)}</span><span class="v">${r.evento||'—'} → ${r.medida||'—'}</span></div>`).join('') || '<div class="review-row"><span class="k">Riesgos</span><span class="v">Sin registrar</span></div>') : '';
+
+  const signerBlocks = state.signers.map(s=>`
+    <div class="review-block">
+      <h4>${s.nombre}${doc.signerSchema.extra.map(ef=>s[ef.id]?` — ${s[ef.id]}`:'').join('')}</h4>
+      ${doc.signerSchema.rutRequired?`<div class="review-row"><span class="k">RUT</span><span class="v mono">${formatearRut(s.rut)}</span></div>`:''}
+      <div class="review-row"><span class="k">Firmado</span><span class="v">${s.timestamp||'—'}</span></div>
+      ${s.firma?`<img class="sig-thumb" src="${s.firma}">`:''}
+    </div>`).join('');
+
+  let statusBanner = '';
+  if(state.sendStatus==='sent') statusBanner = `<div class="banner ok"><b>Enviado correctamente</b> a ${state.destinatario}.</div>`;
+  else if(state.sendStatus==='sending') statusBanner = `<div class="banner">Enviando…</div>`;
+  else if(state.sendStatus==='error') statusBanner = `<div class="banner warn"><b>No se pudo enviar automáticamente.</b> Descarga el reporte o ábrelo en tu correo manualmente.</div>`;
+  else if(!EMAILJS_READY) statusBanner = `<div class="banner warn"><b>Envío automático aún no configurado</b> (faltan las credenciales de EmailJS). Por ahora descarga el reporte o ábrelo en tu correo.</div>`;
+
+  return `
+    <button class="back-link" id="btnBackToSigners">‹ Volver a firmantes</button>
+    ${statusBanner}
+    <div class="review-block"><h4>${doc.label}</h4>${genRows}</div>
+    ${riskRows ? `<div class="review-block"><h4>Análisis de riesgos</h4>${riskRows}</div>` : ''}
+    <div class="section-title" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;text-transform:uppercase;margin-bottom:10px;">Firmas (${state.signers.filter(s=>s.firma).length}/${state.signers.length})</div>
+    ${signerBlocks}
+    ${state.closingSig ? `<div class="review-block"><h4>${doc.closing.title}</h4>
+      <div class="review-row"><span class="k">Nombre</span><span class="v">${state.closingSig.nombre}</span></div>
+      ${doc.closing.roleField?`<div class="review-row"><span class="k">${doc.closing.roleField.label}</span><span class="v">${state.closingSig[doc.closing.roleField.id]||'—'}</span></div>`:''}
+      ${state.closingSig.firma?`<img class="sig-thumb" src="${state.closingSig.firma}">`:''}
+    </div>`:''}
+    <div class="field" style="margin-top:16px;"><label>Correo de jefatura (destino)</label><input type="email" id="f_destinatario" value="${state.destinatario}" placeholder="jefatura@empresa.cl"></div>
+    ${!ready ? `<div class="banner" style="border-color:var(--danger);color:#ffb3b3;">Faltan firmas para poder finalizar el documento.</div>` : ''}
+  `;
+}
+
+/* ---------- BOTONERA ---------- */
+function actionbarHTML(){
+  if(state.screen==='select') return '';
+  if(state.screen==='form') return `<footer class="actionbar"><button class="btn-primary" id="btnToSigners">Continuar a firmas</button></footer>`;
+  if(state.screen==='signers'){
+    const canContinue = state.signers.length>0;
+    return `<footer class="actionbar"><button class="btn-primary" id="btnToReview" ${canContinue?'':'disabled'}>Revisar y finalizar</button></footer>`;
+  }
+  if(state.screen==='review'){
+    const doc = currentDoc();
+    const allSigned = state.signers.length>0 && state.signers.every(s=>s.firma);
+    const closingOk = !doc.closing || !doc.closing.enabled || (state.closingSig && state.closingSig.firma);
+    const ready = allSigned && closingOk;
+    return `<footer class="actionbar">
+      <button class="btn-primary" id="btnSend" ${ready?'':'disabled'}>${EMAILJS_READY?'Finalizar y enviar':'Descargar reporte'}</button>
+      <button class="btn-secondary" id="btnMailto" ${ready?'':'disabled'}>Abrir correo con resumen</button>
+    </footer>`;
+  }
+  return '';
+}
+
+/* ============ HANDLERS ============ */
+function attachHandlers(){
+  document.querySelectorAll('[data-doc]').forEach(el=>{
+    el.onclick = ()=>{ state.docType = el.dataset.doc; state.screen='form'; saveDraft(); render(); };
+  });
+  const btnContinueDraft = document.getElementById('btnContinueDraft');
+  if(btnContinueDraft) btnContinueDraft.onclick = async ()=>{ const d = await loadDraft(); if(d){ state = d; window.__hasDraft=false; render(); } };
+  const btnDiscardDraft = document.getElementById('btnDiscardDraft');
+  if(btnDiscardDraft) btnDiscardDraft.onclick = async ()=>{ await clearDraft(); window.__hasDraft=false; render(); };
+
+  // Accordion toggle
+  document.querySelectorAll('.accordion-head').forEach(h=>{
+    h.onclick = ()=>{ h.closest('.accordion').classList.toggle('open'); };
+  });
+
+  // Campos generales / finales
+  document.querySelectorAll('[data-field]').forEach(el=>{ el.oninput = ()=>{ state.form[el.dataset.field] = el.value; saveDraft(); }; });
+  document.querySelectorAll('[data-final]').forEach(el=>{ el.oninput = ()=>{ state.final[el.dataset.final] = el.value; saveDraft(); }; });
+
+  // Tri toggles
+  document.querySelectorAll('[data-tri]').forEach(btn=>{
+    btn.onclick = ()=>{ const key = btn.dataset.tri, val = btn.dataset.val;
+      state.tri[key] = state.tri[key]===val ? null : val; saveDraft(); render(); };
+  });
+
+  // Multi checkboxes
+  document.querySelectorAll('[data-multi]').forEach(el=>{
+    el.onclick = ()=>{ const key = el.dataset.multi; state.multi[key] = !state.multi[key]; saveDraft(); render(); };
+  });
+
+  // Risks
+  const btnAddRisk = document.getElementById('btnAddRisk');
+  if(btnAddRisk) btnAddRisk.onclick = ()=>{ state.risks.push({etapa:'',evento:'',medida:''}); saveDraft(); render(); };
+  document.querySelectorAll('[data-risk]').forEach(el=>{
+    el.oninput = ()=>{ const i = +el.dataset.i, field = el.dataset.risk; state.risks[i][field] = el.value; saveDraft(); };
+  });
+  document.querySelectorAll('[data-del-risk]').forEach(el=>{ el.onclick = ()=>{ state.risks.splice(+el.dataset.delRisk,1); saveDraft(); render(); }; });
+
+  const btnBackToSelect = document.getElementById('btnBackToSelect');
+  if(btnBackToSelect) btnBackToSelect.onclick = ()=>{ state.screen='select'; render(); };
+  const btnToSigners = document.getElementById('btnToSigners');
+  if(btnToSigners) btnToSigners.onclick = ()=>{ state.screen='signers'; saveDraft(); render(); };
+
+  // Firmantes
+  const btnBackToForm = document.getElementById('btnBackToForm');
+  if(btnBackToForm) btnBackToForm.onclick = ()=>{ state.screen='form'; render(); };
+  const rutInput = document.getElementById('newRut');
+  const newNameInput = document.getElementById('newName');
+  if(newNameInput) newNameInput.addEventListener('input', ()=>{
+    const w = findWorker(newNameInput.value);
+    if(w){
+      if(rutInput){ rutInput.value = formatearRut(w.rut); rutInput.dispatchEvent(new Event('input')); }
+      const cargoEl = document.getElementById('new_cargo');
+      if(cargoEl && w.cargo) cargoEl.value = w.cargo;
+    }
+  });
+  if(rutInput) rutInput.oninput = ()=>{
+    const hint = document.getElementById('rutHint');
+    if(rutInput.value.length>3){ const ok = validarRut(rutInput.value);
+      hint.textContent = ok?'RUT válido':'RUT inválido — revisa el dígito verificador'; hint.style.color = ok?'var(--teal)':'var(--danger)';
+    } else { hint.textContent = 'Formato: 12.345.678-9'; hint.style.color = 'var(--text-lo)'; }
+  };
+  const btnAddSigner = document.getElementById('btnAddSigner');
+  if(btnAddSigner) btnAddSigner.onclick = ()=>{
+    const doc = currentDoc();
+    const name = document.getElementById('newName').value.trim();
+    if(!name){ toast('Completa el nombre'); return; }
+    let rut = '';
+    if(doc.signerSchema.rutRequired){
+      rut = document.getElementById('newRut').value.trim();
+      if(!rut){ toast('Completa el RUT'); return; }
+      if(!validarRut(rut)){ toast('El RUT ingresado no es válido'); return; }
+    }
+    const signer = {id:uid(), nombre:name, rut:limpiarRut(rut), firma:null, timestamp:null};
+    doc.signerSchema.extra.forEach(ef=>{ const el = document.getElementById('new_'+ef.id); signer[ef.id] = el?el.value.trim():''; });
+    state.signers.push(signer);
+    saveDraft(); render();
+  };
+  document.querySelectorAll('[data-del-signer]').forEach(el=>{
+    el.onclick = (e)=>{
+      e.stopPropagation();
+      const idx = +el.dataset.delSigner;
+      const s = state.signers[idx];
+      if(s.firma){
+        showConfirm(`¿Eliminar a ${s.nombre}? Ya había firmado.`, ()=>{
+          state.signers.splice(idx,1); saveDraft(); render();
+        });
+      } else {
+        state.signers.splice(idx,1); saveDraft(); render();
+      }
+    };
+  });
+  const btnClearAllSigners = document.getElementById('btnClearAllSigners');
+  if(btnClearAllSigners) btnClearAllSigners.onclick = ()=>{
+    showConfirm(`¿Eliminar a los ${state.signers.length} integrantes agregados?`, ()=>{
+      state.signers = []; saveDraft(); render();
+    });
+  };
+  // FIX: usar el índice REAL del firmante (data-signer-index), no la posición visual filtrada
+  document.querySelectorAll('.signer-card[data-signer-index]').forEach(el=>{
+    el.onclick = (e)=>{
+      if(e.target.closest('[data-del-signer]')) return;
+      const idx = +el.dataset.signerIndex;
+      if(state.signers[idx].firma) return; // ya firmado, no reabrir
+      openSignModal(idx);
+    };
+  });
+  const closingCard = document.getElementById('closingCard');
+  if(closingCard) closingCard.onclick = ()=>{
+    if(state.closingSig && state.closingSig.firma) return;
+    openClosingFormModal();
+  };
+
+  const btnToReview = document.getElementById('btnToReview');
+  if(btnToReview) btnToReview.onclick = ()=>{ state.screen='review'; state.sendStatus=null; saveDraft(); render(); };
+
+  // Revisión
+  const btnBackToSigners = document.getElementById('btnBackToSigners');
+  if(btnBackToSigners) btnBackToSigners.onclick = ()=>{ state.screen='signers'; render(); };
+  const destInput = document.getElementById('f_destinatario');
+  if(destInput) destInput.oninput = ()=>{ state.destinatario = destInput.value; saveDraft(); };
+  const btnSend = document.getElementById('btnSend');
+  if(btnSend) btnSend.onclick = ()=>{ if(EMAILJS_READY) sendViaEmailJS(); else downloadReport(); };
+  const btnMailto = document.getElementById('btnMailto');
+  if(btnMailto) btnMailto.onclick = openMailto;
+}
+
+/* ============ MODAL DE FIRMA (genérico, sirve para firmante y cierre) ============ */
+function openSignatureCanvas(title, onSave){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>${title}</h3>
+      <p class="sub">Dibuja la firma con el dedo dentro del recuadro.</p>
+      <canvas id="sigCanvas"></canvas>
+      <div class="sig-actions">
+        <button class="btn-secondary" id="btnClearSig">Borrar</button>
+        <button class="btn-primary" id="btnSaveSig">Guardar firma</button>
+      </div>
+      <button class="btn-ghost" id="btnCancelSig" style="width:100%; text-align:center; margin-top:8px;">Cancelar</button>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const canvas = document.getElementById('sigCanvas');
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = canvas.clientWidth * ratio; canvas.height = canvas.clientHeight * ratio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(ratio, ratio); ctx.strokeStyle = '#F5C400'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  let drawing = false, hasDrawn = false;
+  function pos(e){ const rect = canvas.getBoundingClientRect(); const p = e.touches?e.touches[0]:e; return {x:p.clientX-rect.left, y:p.clientY-rect.top}; }
+  function start(e){ drawing=true; hasDrawn=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+  function move(e){ if(!drawing) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+  function end(){ drawing=false; }
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false}); canvas.addEventListener('touchmove', move, {passive:false}); canvas.addEventListener('touchend', end);
+
+  document.getElementById('btnClearSig').onclick = ()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); hasDrawn=false; };
+  document.getElementById('btnCancelSig').onclick = ()=> overlay.remove();
+  document.getElementById('btnSaveSig').onclick = ()=>{
+    if(!hasDrawn){ toast('Dibuja la firma antes de guardar'); return; }
+    const dataUrl = canvas.toDataURL('image/png');
+    overlay.remove();
+    onSave(dataUrl);
+  };
+}
+
+function openSignModal(index){
+  const s = state.signers[index];
+  openSignatureCanvas(`Firma de ${s.nombre}`, (dataUrl)=>{
+    state.signers[index].firma = dataUrl;
+    state.signers[index].timestamp = new Date().toLocaleString('es-CL');
+    saveDraft(); toast('Firma guardada ✓'); render();
+  });
+}
+
+function openClosingFormModal(){
+  const doc = currentDoc();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>${doc.closing.title}</h3>
+      <p class="sub">Completa los datos antes de firmar.</p>
+      <div class="field"><label>Nombre</label><input type="text" id="closingName" value="${state.closingSig?state.closingSig.nombre:''}" placeholder="Nombre completo"></div>
+      ${doc.closing.roleField ? `<div class="field"><label>${doc.closing.roleField.label}</label><input type="text" id="closingRole" value="${state.closingSig?state.closingSig[doc.closing.roleField.id]||'':''}" placeholder="${doc.closing.roleField.label}"></div>` : ''}
+      <button class="btn-primary" id="btnClosingNext">Continuar a firmar</button>
+      <button class="btn-ghost" id="btnClosingCancel" style="width:100%; text-align:center; margin-top:8px;">Cancelar</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('btnClosingCancel').onclick = ()=> overlay.remove();
+  document.getElementById('btnClosingNext').onclick = ()=>{
+    const name = document.getElementById('closingName').value.trim();
+    if(!name){ toast('Completa el nombre', true); return; }
+    const roleVal = doc.closing.roleField ? document.getElementById('closingRole').value.trim() : '';
+    overlay.remove();
+    openSignatureCanvas(`Firma — ${name}`, (dataUrl)=>{
+      state.closingSig = { nombre:name, firma:dataUrl, timestamp:new Date().toLocaleString('es-CL') };
+      if(doc.closing.roleField) state.closingSig[doc.closing.roleField.id] = roleVal;
+      saveDraft(); toast('Firma de cierre guardada ✓'); render();
+    });
+  };
+}
+
+/* ============ CONFIRMACIÓN PERSONALIZADA (confirm() nativo se bloquea en varios navegadores in-app) ============ */
+function showConfirm(message, onConfirm){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>Confirmar</h3>
+      <p class="sub">${message}</p>
+      <div class="sig-actions">
+        <button class="btn-secondary" id="btnConfirmNo">Cancelar</button>
+        <button class="btn-primary" id="btnConfirmYes" style="background:var(--danger);color:#fff;">Eliminar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('btnConfirmNo').onclick = ()=> overlay.remove();
+  document.getElementById('btnConfirmYes').onclick = ()=>{ overlay.remove(); onConfirm(); };
+}
+
+/* ============ TOAST ============ */
+function toast(msg, isErr){
+  const t = document.createElement('div'); t.className = 'toast'+(isErr?' err':''); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(), 2400);
+}
+
+/* ============ REPORTE (para descarga / adjuntar manualmente) ============ */
+function buildReportHTML(){
+  const doc = currentDoc(); const f = state.form;
+  const genRows = doc.fields.map(fd=>`<tr><td>${fd.label}</td><td>${f[fd.id]||'—'}</td></tr>`).join('');
+  const riskRows = (doc.risks&&doc.risks.enabled) ? state.risks.map(r=>`<tr><td>${r.etapa||'—'}</td><td>${r.evento||'—'}</td><td>${r.medida||'—'}</td></tr>`).join('') : '';
+  const signerRows = state.signers.map(s=>`
+    <div style="margin-bottom:16px; padding:12px; border:1px solid #ddd; border-radius:8px;">
+      <b>${s.nombre}</b>${doc.signerSchema.rutRequired?` — RUT ${formatearRut(s.rut)}`:''}
+      ${doc.signerSchema.extra.map(ef=>s[ef.id]?` — ${ef.label}: ${s[ef.id]}`:'').join('')}<br>
+      <span style="color:#666; font-size:12px;">Firmado: ${s.timestamp}</span><br>
+      <img src="${s.firma}" style="height:60px; background:#fff; margin-top:6px;">
+    </div>`).join('');
+  const closingBlock = state.closingSig ? `
+    <h2>${doc.closing.title}</h2>
+    <p><b>${state.closingSig.nombre}</b>${doc.closing.roleField?` — ${state.closingSig[doc.closing.roleField.id]||''}`:''}</p>
+    <img src="${state.closingSig.firma}" style="height:60px; background:#fff;">` : '';
+
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${doc.label}</title>
+  <style>body{font-family:Arial,sans-serif; max-width:700px; margin:30px auto; color:#222;}
+  h1{font-size:20px;} table{width:100%; border-collapse:collapse; margin:10px 0;}
+  td{padding:6px 8px; border:1px solid #ddd; font-size:13px;} h2{font-size:15px; margin-top:24px; border-bottom:2px solid #F5C400; padding-bottom:4px;}</style>
+  </head><body>
+    <h1>${doc.label} — ${doc.meta.codigo} v${doc.meta.version}</h1>
+    <table>${genRows}</table>
+    ${riskRows?`<h2>Análisis de riesgos</h2><table><tr><td><b>Etapa</b></td><td><b>Evento no deseado</b></td><td><b>Medida de control</b></td></tr>${riskRows}</table>`:''}
+    <h2>Firmas</h2>
+    ${signerRows}
+    ${closingBlock}
+  </body></html>`;
+}
+
+function downloadReport(){
+  const html = buildReportHTML();
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); const doc = currentDoc();
+  a.href = url; a.download = `${doc.label.replace(/\s+/g,'_')}_${state.form.fecha||'sin_fecha'}.html`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('Reporte descargado');
+}
+
+function summaryText(){
+  const doc = currentDoc(); const f = state.form;
+  let body = `${doc.label} — ${doc.meta.codigo}\n`;
+  doc.fields.forEach(fd=>{ body += `${fd.label}: ${f[fd.id]||'—'}\n`; });
+  body += `\nFirmantes:\n`;
+  state.signers.forEach(s=>{ body += `- ${s.nombre}${doc.signerSchema.rutRequired?` (${formatearRut(s.rut)})`:''} — firmado ${s.timestamp}\n`; });
+  if(state.closingSig) body += `\n${doc.closing.title}: ${state.closingSig.nombre} — firmado ${state.closingSig.timestamp}\n`;
+  return body;
+}
+
+function openMailto(){
+  const doc = currentDoc();
+  const subject = encodeURIComponent(`${doc.label} — ${state.form.obra||state.form.usuario||''} — ${state.form.fecha||''}`);
+  const body = summaryText() + `\n(Adjunta el reporte descargado — las firmas no van incluidas en este correo, solo el resumen)`;
+  window.location.href = `mailto:${state.destinatario||''}?subject=${subject}&body=${encodeURIComponent(body)}`;
+}
+
+/* ============ ENVÍO AUTOMÁTICO VÍA EMAILJS ============ */
+async function sendViaEmailJS(){
+  if(!state.destinatario){ toast('Ingresa el correo de destino', true); return; }
+  const doc = currentDoc();
+  state.sendStatus = 'sending'; render();
+  try{
+    await emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
+      doc_titulo: doc.label,
+      empresa: state.form.empresa || state.form.cliente || '',
+      obra: state.form.obra || state.form.usuario || '',
+      fecha: state.form.fecha || '',
+      supervisor: state.form.supervisor || state.form.instructor || '',
+      resumen: summaryText(),
+      destinatario: state.destinatario,
+      to_email: state.destinatario,
+    });
+    state.sendStatus = 'sent';
+    await clearDraft();
+    toast('Documento enviado ✓');
+  }catch(err){
+    console.error(err);
+    state.sendStatus = 'error';
+    toast('No se pudo enviar automáticamente', true);
+  }
+  render();
+}
+
+/* ============ INIT ============ */
+async function init(){
+  render();
+  const draft = await loadDraft();
+  if(draft && draft.screen !== 'select'){ window.__hasDraft = true; render(); }
+}
+init();
+</script>
+</body>
+</html>
