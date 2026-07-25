@@ -26,9 +26,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Faltan parámetros requeridos (to, subject, base64Attachment)' });
     }
 
-    const host = process.env.SMTP_HOST || 'no-reply@raycaingenieria.com';
+    const host = process.env.SMTP_HOST || 'mail.raycaingenieria.com';
     const port = parseInt(process.env.SMTP_PORT || '465', 10);
-    const user = process.env.SMTP_USER || 'rgarcia@raycaingenieria.com';
+    const user = process.env.SMTP_USER || 'no-reply@raycaingenieria.com';
     const pass = process.env.SMTP_PASS || '@Rayca3003'; 
 
     if (!pass) {
@@ -44,6 +44,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       auth: {
         user,
         pass
+      },
+      tls: {
+        rejectUnauthorized: false
       }
     });
 
