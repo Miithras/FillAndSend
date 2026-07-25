@@ -4,9 +4,11 @@ import { DOC_TYPES } from '../config/docTypes';
 
 interface HeaderProps {
   state: AppState;
+  onOpenHistory: () => void;
+  historyCount: number;
 }
 
-export const Header: React.FC<HeaderProps> = ({ state }) => {
+export const Header: React.FC<HeaderProps> = ({ state, onOpenHistory, historyCount }) => {
   const currentDoc = DOC_TYPES[state.docType];
 
   let stepNum = 0;
@@ -20,11 +22,47 @@ export const Header: React.FC<HeaderProps> = ({ state }) => {
         <div className="brand-title">
           ART <span>Digital</span>
         </div>
-        <div className="brand-meta">
-          <div>RAYCA INGENIERÍA</div>
-          {state.screen !== 'select' && currentDoc && (
-            <div style={{ color: currentDoc.accent }}>{currentDoc.meta.codigo} v{currentDoc.meta.version}</div>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            onClick={onOpenHistory}
+            style={{
+              background: 'var(--bg-2)',
+              border: '1px solid var(--line)',
+              color: 'var(--text-hi)',
+              padding: '5px 10px',
+              borderRadius: '8px',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            title="Ver historial de las últimas 24 horas"
+          >
+            📜 24h
+            {historyCount > 0 && (
+              <span
+                style={{
+                  background: 'var(--yellow)',
+                  color: '#12151C',
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  borderRadius: '10px',
+                  padding: '1px 5px'
+                }}
+              >
+                {historyCount}
+              </span>
+            )}
+          </button>
+
+          <div className="brand-meta">
+            <div>RAYCA INGENIERÍA</div>
+            {state.screen !== 'select' && currentDoc && (
+              <div style={{ color: currentDoc.accent }}>{currentDoc.meta.codigo} v{currentDoc.meta.version}</div>
+            )}
+          </div>
         </div>
       </div>
 

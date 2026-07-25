@@ -3,6 +3,7 @@ import { AppState, DocTypeId, RiskItem, Signer } from './types';
 import { INITIAL_STATE, saveDraft, loadDraft, clearDraft } from './services/storageService';
 import { sendDocumentEmail } from './services/emailService';
 import { downloadOriginalExcel, shareOriginalExcel } from './services/excelService';
+import { saveToHistory, getHistory } from './services/historyService';
 
 import { Header } from './components/Header';
 import { DocumentSelector } from './components/DocumentSelector';
@@ -12,12 +13,17 @@ import { ReviewScreen } from './components/ReviewScreen';
 import { SignatureModal } from './components/SignatureModal';
 import { ClosingFormModal } from './components/ClosingFormModal';
 import { ConfirmModal } from './components/ConfirmModal';
+import { HistoryModal } from './components/HistoryModal';
 import { Toast } from './components/Toast';
 
 export function App() {
   const [state, setState] = useState<AppState>(INITIAL_STATE);
   const [hasDraft, setHasDraft] = useState(false);
   const [toastMsg, setToastMsg] = useState<{ msg: string; isErr?: boolean } | null>(null);
+
+  // Historial 24h
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyCount, setHistoryCount] = useState(0);
 
   // Modales
   const [activeSignerIndex, setActiveSignerIndex] = useState<number | null>(null);
@@ -26,12 +32,18 @@ export function App() {
   const [closingDraftInfo, setClosingDraftInfo] = useState<{ name: string; roleVal: string } | null>(null);
   const [confirmConfig, setConfirmConfig] = useState<{ msg: string; onConfirm: () => void } | null>(null);
 
-  // Cargar borrador inicial
+  const refreshHistoryCount = async () => {
+    const records = await getHistory();
+    setHistoryCount(records.length);
+  };
+
+  // Cargar borrador inicial y recargar contador de historial
   useEffect(() => {
     const draft = loadDraft();
     if (draft && draft.screen !== 'select') {
       setHasDraft(true);
     }
+    refreshHistoryCount();
   }, []);
 
   // Auto-guardado
@@ -208,8 +220,10 @@ export function App() {
     try {
       await sendDocumentEmail(state);
       setState(prev => ({ ...prev, sendStatus: 'sent' }));
+      await saveToHistory(state);
+      await refreshHistoryCount();
       clearDraft();
-      showToast('Documento enviado ✓ (con el Excel adjunto)');
+      showToast('Documento enviado ✓ (Guardado en historial 24h)');
     } catch (err: any) {
       console.error('Error al enviar documento:', err);
       const msg = err?.message || String(err);
@@ -222,6 +236,8 @@ export function App() {
     showToast('Generando Excel...');
     try {
       await shareOriginalExcel(state);
+      await saveToHistory(state);
+      await refreshHistoryCount();
     } catch (err: any) {
       if (err.name === 'AbortError') return;
       showToast('Error al compartir: ' + (err.message || err), true);
@@ -232,7 +248,9 @@ export function App() {
     showToast('Generando Excel...');
     try {
       await downloadOriginalExcel(state);
-      showToast('Excel descargado ✓');
+      await saveToHistory(state);
+      await refreshHistoryCount();
+      showToast('Excel descargado ✓ (Guardado en historial 24h)');
     } catch (err: any) {
       showToast('Error al descargar: ' + (err.message || err), true);
     }
@@ -240,7 +258,11 @@ export function App() {
 
   return (
     <div id="app">
-      <Header state={state} />
+      <Header
+        state={state}
+        onOpenHistory={() => setShowHistoryModal(true)}
+        historyCount={historyCount}
+      />
 
       <main className="app-content">
         {state.screen === 'select' && (
@@ -294,6 +316,21 @@ export function App() {
           />
         )}
       </main>
+
+      {/* MODAL HISTORIAL 24 HORAS */}
+      {showHistoryModal && (
+        <HistoryModal
+          onClose={() => {
+            setShowHistoryModal(false);
+            refreshHistoryCount();
+          }}
+          onLoadState={s => {
+            setState(s);
+            showToast('Documento cargado en el formulario');
+          }}
+          onShowToast={showToast}
+        />
+      )}
 
       {/* MODAL DE FIRMA DE INTEGRANTE */}
       {activeSignerIndex !== null && (
