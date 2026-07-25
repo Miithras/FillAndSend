@@ -27,13 +27,13 @@ export const ExpandableActionBar: React.FC<ExpandableActionBarProps> = ({
     const currentY = e.touches[0].clientY;
     const diffY = touchStartY.current - currentY;
 
-    // Deslizar hacia arriba (diffY > 40) => Expandir
-    if (diffY > 40 && !isExpanded) {
+    // Deslizar hacia arriba (diffY > 30) => Expandir
+    if (diffY > 30 && !isExpanded) {
       setIsExpanded(true);
       touchStartY.current = null;
     }
-    // Deslizar hacia abajo (diffY < -40) => Colapsar
-    else if (diffY < -40 && isExpanded) {
+    // Deslizar hacia abajo (diffY < -30) => Colapsar
+    else if (diffY < -30 && isExpanded) {
       setIsExpanded(false);
       touchStartY.current = null;
     }
@@ -44,62 +44,64 @@ export const ExpandableActionBar: React.FC<ExpandableActionBarProps> = ({
   };
 
   return (
-    <div
-      className={`expandable-action-sheet ${isExpanded ? 'expanded' : ''}`}
+    <footer
+      className={`fixed-bottom-sheet ${isExpanded ? 'is-expanded' : ''}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* MANIJA TÁCTIL Y FLECHA PARA DESLIZAR */}
+      {/* MANIJA EN LA PARTE SUPERIOR DEL FOOTER */}
       <div
-        className="sheet-handle"
+        className="sheet-drag-handle"
         onClick={() => setIsExpanded(!isExpanded)}
-        title={isExpanded ? 'Deslizar hacia abajo para ocultar' : 'Deslizar hacia arriba para más opciones'}
+        title={isExpanded ? 'Toca o desliza para ocultar' : 'Toca o desliza hacia arriba para más opciones'}
       >
-        <div className="handle-bar" />
-        <div className="handle-text">
-          {isExpanded ? '▼ Ocultar opciones de exportación' : '▲ Desliza hacia arriba para más opciones'}
+        <div className="drag-pill" />
+        <div className="drag-text">
+          {isExpanded ? '▼ OCULTAR OPCIONES' : '▲ DESLIZA HACIA ARRIBA PARA MÁS OPCIONES'}
         </div>
       </div>
 
-      {/* CONTENIDO EXPANDIBLE (OPCIONES SECUNDARIAS) */}
-      {isExpanded && (
-        <div className="sheet-expanded-content">
-          <button
-            className="btn-secondary"
-            onClick={() => {
-              onShareExcel();
-              setIsExpanded(false);
-            }}
-            disabled={!ready}
-            style={{ marginTop: 0 }}
-          >
-            📤 Compartir Excel (WhatsApp, Gmail...)
-          </button>
-          <button
-            className="btn-secondary"
-            onClick={() => {
-              onDownloadExcel();
-              setIsExpanded(false);
-            }}
-            disabled={!ready}
-            style={{ marginTop: 8 }}
-          >
-            📥 Descargar Excel original rellenado
-          </button>
-        </div>
-      )}
+      {/* CONTENEDOR DESLIZABLE DE OPCIONES SECUNDARIAS (OCULTO HASTA DESLIZAR) */}
+      <div className={`sheet-collapsible-content ${isExpanded ? 'show' : ''}`}>
+        <button
+          className="btn-secondary"
+          type="button"
+          onClick={() => {
+            onShareExcel();
+            setIsExpanded(false);
+          }}
+          disabled={!ready}
+          style={{ marginTop: 0 }}
+        >
+          📤 Compartir Excel (WhatsApp, Gmail...)
+        </button>
 
-      {/* BOTÓN PRINCIPAL SIEMPRE VISIBLE */}
-      <div className="sheet-primary-wrap">
+        <button
+          className="btn-secondary"
+          type="button"
+          onClick={() => {
+            onDownloadExcel();
+            setIsExpanded(false);
+          }}
+          disabled={!ready}
+          style={{ marginTop: 8 }}
+        >
+          📥 Descargar Excel original rellenado
+        </button>
+      </div>
+
+      {/* BOTÓN PRINCIPAL SIEMPRE VISIBLE EN EL FOOTER */}
+      <div className="sheet-main-action">
         <button
           className="btn-primary"
+          type="button"
           onClick={onSendDocument}
           disabled={!ready || sending}
         >
           {sending ? 'Enviando correo...' : 'Finalizar y enviar por Correo'}
         </button>
       </div>
-    </div>
+    </footer>
   );
 };
