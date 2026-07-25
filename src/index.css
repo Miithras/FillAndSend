@@ -650,6 +650,60 @@ footer.actionbar {
   z-index: 10;
 }
 
+/* EXPANDABLE BOTTOM SHEET ACTION BAR */
+.expandable-action-sheet {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-1);
+  border-top: 1px solid var(--line);
+  border-radius: 20px 20px 0 0;
+  padding: 10px 18px 20px 18px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s;
+}
+
+.sheet-handle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0 8px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.handle-bar {
+  width: 40px;
+  height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  margin-bottom: 6px;
+}
+
+.handle-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--yellow);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.sheet-expanded-content {
+  padding-bottom: 12px;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+.sheet-primary-wrap {
+  width: 100%;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* MODALES */
 .modal-overlay {
   position: fixed;
