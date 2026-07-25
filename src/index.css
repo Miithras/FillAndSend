@@ -641,6 +641,10 @@ header.topbar {
   text-decoration: underline;
 }
 
+.review-screen {
+  padding-bottom: 220px; /* Evita que el contenido de la hoja quede tapado por el footer fijo */
+}
+
 footer.actionbar {
   position: sticky;
   bottom: 0;
@@ -664,6 +668,8 @@ footer.fixed-bottom-sheet {
   padding: 10px 18px 20px 18px;
   box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
   z-index: 100;
+  touch-action: none; /* Bloquea cualquier scroll o paneo del navegador sobre el footer */
+  overscroll-behavior: contain;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -674,6 +680,7 @@ footer.fixed-bottom-sheet {
   padding: 4px 0 8px 0;
   cursor: pointer;
   user-select: none;
+  touch-action: none;
 }
 
 .drag-pill {

@@ -19,55 +19,56 @@ export const ExpandableActionBar: React.FC<ExpandableActionBarProps> = ({
   const footerRef = useRef<HTMLElement>(null);
   const touchStartY = useRef<number | null>(null);
 
-  // Evitar que la página de fondo haga scroll al deslizar sobre el footer
   useEffect(() => {
     const el = footerRef.current;
     if (!el) return;
 
-    const onNativeTouchMove = (e: TouchEvent) => {
-      if (touchStartY.current !== null && e.cancelable) {
-        e.preventDefault(); // Detener scroll de la pantalla principal
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY.current = e.touches[0].clientY;
+      e.stopPropagation();
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.stopPropagation();
+      if (e.cancelable) {
+        e.preventDefault(); // Bloquear scroll de la página de fondo obligatoriamente
+      }
+
+      if (touchStartY.current === null) return;
+      const currentY = e.touches[0].clientY;
+      const diffY = touchStartY.current - currentY;
+
+      // Deslizar hacia arriba (> 20px) => Abrir opciones
+      if (diffY > 20) {
+        setIsExpanded(true);
+      }
+      // Deslizar hacia abajo (< -20px) => Cerrar opciones
+      else if (diffY < -20) {
+        setIsExpanded(false);
       }
     };
 
-    el.addEventListener('touchmove', onNativeTouchMove, { passive: false });
+    const handleTouchEnd = (e: TouchEvent) => {
+      touchStartY.current = null;
+      e.stopPropagation();
+    };
+
+    // Registrar listeners nativos con passive: false para garantizar cancelabilidad del scroll
+    el.addEventListener('touchstart', handleTouchStart, { passive: false });
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    el.addEventListener('touchend', handleTouchEnd, { passive: false });
+
     return () => {
-      el.removeEventListener('touchmove', onNativeTouchMove);
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('touchend', handleTouchEnd);
     };
   }, []);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartY.current === null) return;
-    const currentY = e.touches[0].clientY;
-    const diffY = touchStartY.current - currentY;
-
-    // Deslizar hacia arriba (diffY > 25) => Expandir
-    if (diffY > 25 && !isExpanded) {
-      setIsExpanded(true);
-      touchStartY.current = null;
-    }
-    // Deslizar hacia abajo (diffY < -25) => Colapsar
-    else if (diffY < -25 && isExpanded) {
-      setIsExpanded(false);
-      touchStartY.current = null;
-    }
-  };
-
-  const handleTouchEnd = () => {
-    touchStartY.current = null;
-  };
 
   return (
     <footer
       ref={footerRef}
       className={`fixed-bottom-sheet ${isExpanded ? 'is-expanded' : ''}`}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       {/* 1. MANIJA SUPERIOR DEL FOOTER */}
       <div
@@ -93,7 +94,7 @@ export const ExpandableActionBar: React.FC<ExpandableActionBarProps> = ({
         </button>
       </div>
 
-      {/* 3. OPCIONES SECUNDARIAS (APARECEN ABAJO DEL BOTÓN PRINCIPAL) */}
+      {/* 3. OPCIONES SECUNDARIAS (APARECEN ABAJO DEL BOTÓN PRINCIPAL AL DESLIZAR / TAP) */}
       <div className={`sheet-collapsible-content ${isExpanded ? 'show' : ''}`}>
         <button
           className="btn-secondary"
