@@ -62,6 +62,20 @@ export const ExpandableActionBar: React.FC<ExpandableActionBarProps> = ({
         </div>
       </div>
 
+      
+
+      {/* BOTÓN PRINCIPAL SIEMPRE VISIBLE EN EL FOOTER */}
+      <div className="sheet-main-action">
+        <button
+          className="btn-primary"
+          type="button"
+          onClick={onSendDocument}
+          disabled={!ready || sending}
+        >
+          {sending ? 'Enviando correo...' : 'Finalizar y enviar por Correo'}
+        </button>
+      </div>
+
       {/* CONTENEDOR DESLIZABLE DE OPCIONES SECUNDARIAS (OCULTO HASTA DESLIZAR) */}
       <div className={`sheet-collapsible-content ${isExpanded ? 'show' : ''}`}>
         <button
@@ -88,18 +102,6 @@ export const ExpandableActionBar: React.FC<ExpandableActionBarProps> = ({
           style={{ marginTop: 8 }}
         >
           📥 Descargar Excel original rellenado
-        </button>
-      </div>
-
-      {/* BOTÓN PRINCIPAL SIEMPRE VISIBLE EN EL FOOTER */}
-      <div className="sheet-main-action">
-        <button
-          className="btn-primary"
-          type="button"
-          onClick={onSendDocument}
-          disabled={!ready || sending}
-        >
-          {sending ? 'Enviando correo...' : 'Finalizar y enviar por Correo'}
         </button>
       </div>
     </footer>
