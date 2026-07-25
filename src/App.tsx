@@ -3,7 +3,7 @@ import { AppState, DocTypeId, RiskItem, Signer } from './types';
 import { INITIAL_STATE, saveDraft, loadDraft, clearDraft } from './services/storageService';
 import { sendDocumentEmail } from './services/emailService';
 import { downloadOriginalExcel, shareOriginalExcel } from './services/excelService';
-import { saveToHistory, getHistory } from './services/historyService';
+import { saveToHistory, getHistory, setupAutoSync, updateHistoryStatus } from './services/historyService';
 
 import { Header } from './components/Header';
 import { DocumentSelector } from './components/DocumentSelector';
@@ -37,13 +37,17 @@ export function App() {
     setHistoryCount(records.length);
   };
 
-  // Cargar borrador inicial y recargar contador de historial
+  // Cargar borrador inicial, contador de historial y sincronización automática offline
   useEffect(() => {
     const draft = loadDraft();
     if (draft && draft.screen !== 'select') {
       setHasDraft(true);
     }
     refreshHistoryCount();
+
+    setupAutoSync(() => {
+      refreshHistoryCount();
+    });
   }, []);
 
   // Auto-guardado
@@ -214,21 +218,38 @@ export function App() {
     showToast('Firma de cierre guardada ✓');
   };
 
-  // Handlers Envío
+  // Handlers Envío (Optimista no bloqueante + Cola Offline)
   const handleSendDocument = async () => {
-    setState(prev => ({ ...prev, sendStatus: 'sending', sendError: null }));
+    const currentSnapshot = JSON.parse(JSON.stringify(state));
+
     try {
-      await sendDocumentEmail(state);
-      setState(prev => ({ ...prev, sendStatus: 'sent' }));
-      await saveToHistory(state);
-      await refreshHistoryCount();
+      // 1. Guardar inmediatamente en historial como pendiente
+      const record = await saveToHistory(currentSnapshot, 'pending_send');
+
+      // 2. Salir a inicio y borrar borrador sin hacer esperar al usuario
       clearDraft();
-      showToast('Documento enviado ✓ (Guardado en historial 24h)');
-    } catch (err: any) {
-      console.error('Error al enviar documento:', err);
-      const msg = err?.message || String(err);
-      setState(prev => ({ ...prev, sendStatus: 'error', sendError: msg }));
-      showToast('No se pudo enviar: ' + msg, true);
+      setState(INITIAL_STATE);
+      setHasDraft(false);
+      await refreshHistoryCount();
+      showToast('Documento finalizado y guardado en historial 📜');
+
+      // 3. Procesar el envío por correo en segundo plano (asíncrono no bloqueante)
+      (async () => {
+        try {
+          await sendDocumentEmail(currentSnapshot);
+          await updateHistoryStatus(record.id, 'sent');
+          await refreshHistoryCount();
+          showToast('Correo enviado con éxito ✉️');
+        } catch (err: any) {
+          console.warn('Fallo envío inmediato en segundo plano, quedando en cola offline:', err);
+          const msg = err?.message || String(err);
+          await updateHistoryStatus(record.id, 'pending_send', msg);
+          await refreshHistoryCount();
+          showToast('Se enviará por correo automáticamente al haber conexión 📡', true);
+        }
+      })();
+    } catch (e) {
+      console.error('Error al guardar en historial:', e);
     }
   };
 
@@ -236,7 +257,7 @@ export function App() {
     showToast('Generando Excel...');
     try {
       await shareOriginalExcel(state);
-      await saveToHistory(state);
+      await saveToHistory(state, 'sent');
       await refreshHistoryCount();
     } catch (err: any) {
       if (err.name === 'AbortError') return;
@@ -248,7 +269,7 @@ export function App() {
     showToast('Generando Excel...');
     try {
       await downloadOriginalExcel(state);
-      await saveToHistory(state);
+      await saveToHistory(state, 'sent');
       await refreshHistoryCount();
       showToast('Excel descargado ✓ (Guardado en historial 24h)');
     } catch (err: any) {

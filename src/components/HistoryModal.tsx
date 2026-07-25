@@ -54,12 +54,13 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, onLoadState
 
   const handleResendEmail = async (record: HistoryRecord) => {
     setSendingId(record.id);
-    onShowToast('Reenviando correo...');
+    onShowToast('Enviando correo...');
     try {
       await sendDocumentEmail(record.state);
-      onShowToast('Correo reenviado con éxito ✓');
+      onShowToast('Correo enviado con éxito ✓');
+      await fetchRecords();
     } catch (err: any) {
-      onShowToast('Fallo al reenviar correo: ' + (err.message || err), true);
+      onShowToast('Fallo al enviar correo: ' + (err.message || err), true);
     } finally {
       setSendingId(null);
     }
@@ -87,7 +88,24 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, onLoadState
             <div className="review-block" key={r.id} style={{ marginBottom: 14, position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <h4 style={{ margin: 0 }}>{r.title} — <span className="mono">{r.code}</span></h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <h4 style={{ margin: 0 }}>{r.title} — <span className="mono">{r.code}</span></h4>
+                    {r.status === 'sent' && (
+                      <span style={{ fontSize: 10, background: 'rgba(47,184,148,0.2)', color: 'var(--teal)', border: '1px solid var(--teal)', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>
+                        🟢 Enviado
+                      </span>
+                    )}
+                    {r.status === 'pending_send' && (
+                      <span style={{ fontSize: 10, background: 'rgba(245,196,0,0.2)', color: 'var(--yellow)', border: '1px solid var(--yellow)', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>
+                        🟡 Pendiente (Sin conexión)
+                      </span>
+                    )}
+                    {r.status === 'error' && (
+                      <span style={{ fontSize: 10, background: 'rgba(255,91,91,0.2)', color: 'var(--danger)', border: '1px solid var(--danger)', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>
+                        🔴 Error de envío
+                      </span>
+                    )}
+                  </div>
                   <div style={{ fontSize: 12, color: 'var(--text-mid)', marginTop: 4 }}>
                     📍 <b>{r.site}</b> · {r.fecha}
                   </div>
@@ -140,7 +158,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, onLoadState
                   onClick={() => handleResendEmail(r)}
                   disabled={sendingId === r.id}
                 >
-                  {sendingId === r.id ? 'Enviando...' : '✉️ Reenviar'}
+                  {sendingId === r.id ? 'Enviando...' : r.status === 'sent' ? '✉️ Reenviar' : '⚡ Enviar ahora'}
                 </button>
               </div>
             </div>

@@ -154,8 +154,23 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
         <div className="hint">Puedes agregar varios correos separados por coma.</div>
       </div>
 
+      {/* OPCIONES ADICIONALES DE EXPORTACIÓN (VISIBLES AL DESLIZAR HACIA ARRIBA) */}
+      <div className="accordion open" style={{ marginTop: 16 }}>
+        <div className="accordion-head">
+          <h3>Opciones adicionales de exportación</h3>
+        </div>
+        <div className="accordion-body">
+          <button className="btn-secondary" onClick={onShareExcel} disabled={!ready} style={{ marginTop: 0 }}>
+            Compartir Excel (WhatsApp, Gmail...)
+          </button>
+          <button className="btn-secondary" onClick={onDownloadExcel} disabled={!ready} style={{ marginTop: 8 }}>
+            Descargar Excel original rellenado
+          </button>
+        </div>
+      </div>
+
       {!ready && (
-        <div className="banner" style={{ borderColor: 'var(--danger)', color: '#ffb3b3' }}>
+        <div className="banner" style={{ borderColor: 'var(--danger)', color: '#ffb3b3', marginTop: 12 }}>
           Faltan firmas para poder finalizar y enviar el documento.
         </div>
       )}
@@ -167,12 +182,6 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           disabled={!ready || state.sendStatus === 'sending'}
         >
           {state.sendStatus === 'sending' ? 'Enviando correo...' : 'Finalizar y enviar por Correo'}
-        </button>
-        <button className="btn-secondary" onClick={onShareExcel} disabled={!ready}>
-          Compartir Excel (WhatsApp, Gmail...)
-        </button>
-        <button className="btn-secondary" onClick={onDownloadExcel} disabled={!ready}>
-          Descargar Excel original rellenado
         </button>
       </footer>
     </div>

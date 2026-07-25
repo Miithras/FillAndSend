@@ -1,6 +1,9 @@
 import { AppState, DocTypeId } from '../types';
 import { DOC_TYPES } from '../config/docTypes';
 import { uid } from '../utils/rut';
+import { sendDocumentEmail } from './emailService';
+
+export type HistoryStatus = 'sent' | 'pending_send' | 'error';
 
 export interface HistoryRecord {
   id: string;
@@ -14,11 +17,13 @@ export interface HistoryRecord {
   destinatario: string;
   conCopia: string;
   signersCount: number;
+  status: HistoryStatus;
+  sendError?: string;
   state: AppState;
 }
 
 const DB_NAME = 'ARTDigitalDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'history_24h';
 const RETENTION_MS = 24 * 60 * 60 * 1000; // 24 Horas en milisegundos
 
@@ -36,19 +41,31 @@ function openDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
+      let store: IDBObjectStore;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      } else {
+        store = (event.target as IDBOpenDBRequest).transaction!.objectStore(STORE_NAME);
+      }
+
+      if (!store.indexNames.contains('expiresAt')) {
         store.createIndex('expiresAt', 'expiresAt', { unique: false });
-        store.createIndex('createdAt', 'createdAt', { unique: false });
+      }
+      if (!store.indexNames.contains('status')) {
+        store.createIndex('status', 'status', { unique: false });
       }
     };
   });
 }
 
 /**
- * Guarda un registro de documento completado/enviado en el historial de 24 horas.
+ * Guarda un registro de documento en el historial de 24 horas.
  */
-export async function saveToHistory(state: AppState): Promise<HistoryRecord> {
+export async function saveToHistory(
+  state: AppState,
+  status: HistoryStatus = 'pending_send',
+  sendError?: string
+): Promise<HistoryRecord> {
   const db = await openDB();
   const doc = DOC_TYPES[state.docType];
   const now = Date.now();
@@ -65,6 +82,8 @@ export async function saveToHistory(state: AppState): Promise<HistoryRecord> {
     destinatario: state.destinatario,
     conCopia: state.conCopia,
     signersCount: state.signers.length,
+    status,
+    sendError,
     state: JSON.parse(JSON.stringify(state)) // Copia profunda del estado
   };
 
@@ -75,6 +94,33 @@ export async function saveToHistory(state: AppState): Promise<HistoryRecord> {
 
     req.onsuccess = () => resolve(record);
     req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Actualiza el estado de envío de un registro existente.
+ */
+export async function updateHistoryStatus(
+  id: string,
+  status: HistoryStatus,
+  sendError?: string
+): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const getReq = store.get(id);
+
+    getReq.onsuccess = () => {
+      const record: HistoryRecord = getReq.result;
+      if (record) {
+        record.status = status;
+        record.sendError = sendError;
+        store.put(record);
+      }
+      resolve();
+    };
+    getReq.onerror = () => reject(getReq.error);
   });
 }
 
@@ -96,7 +142,6 @@ export async function getHistory(): Promise<HistoryRecord[]> {
       req.onerror = () => reject(req.error);
     });
 
-    // Separar válidos de expirados (> 24h)
     const validRecords: HistoryRecord[] = [];
     const expiredIds: string[] = [];
 
@@ -108,12 +153,10 @@ export async function getHistory(): Promise<HistoryRecord[]> {
       }
     });
 
-    // Eliminar expirados de fondo
     if (expiredIds.length > 0) {
       deleteRecords(expiredIds).catch(err => console.warn('Error purgando expirados:', err));
     }
 
-    // Ordenar del más reciente al más antiguo
     return validRecords.sort((a, b) => b.createdAt - a.createdAt);
   } catch (e) {
     console.error('Error al obtener historial:', e);
@@ -135,6 +178,71 @@ export async function deleteRecords(ids: string[]): Promise<void> {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
+}
+
+/**
+ * Procesa en segundo plano todos los correos pendientes del historial.
+ * Intenta enviar vía SMTP y actualiza el estado a 'sent' o 'error'.
+ */
+let isProcessingQueue = false;
+
+export async function processPendingEmailsQueue(onStatusChange?: () => void): Promise<{ processed: number; errors: number }> {
+  if (isProcessingQueue) return { processed: 0, errors: 0 };
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return { processed: 0, errors: 0 };
+  }
+
+  isProcessingQueue = true;
+  let processed = 0;
+  let errors = 0;
+
+  try {
+    const history = await getHistory();
+    const pending = history.filter(r => r.status === 'pending_send' || r.status === 'error');
+
+    for (const record of pending) {
+      try {
+        await sendDocumentEmail(record.state);
+        await updateHistoryStatus(record.id, 'sent');
+        processed++;
+        if (onStatusChange) onStatusChange();
+      } catch (err: any) {
+        const errorMsg = err?.message || String(err);
+        await updateHistoryStatus(record.id, 'pending_send', errorMsg);
+        errors++;
+      }
+    }
+  } catch (e) {
+    console.error('Error en cola de envío:', e);
+  } finally {
+    isProcessingQueue = false;
+  }
+
+  return { processed, errors };
+}
+
+/**
+ * Configura listeners automáticos para reintentar envíos cuando se recupera la conexión a internet.
+ */
+export function setupAutoSync(onSyncComplete?: () => void) {
+  if (typeof window === 'undefined') return;
+
+  const runSync = () => {
+    processPendingEmailsQueue(onSyncComplete).then(res => {
+      if (res.processed > 0 && onSyncComplete) {
+        onSyncComplete();
+      }
+    });
+  };
+
+  window.addEventListener('online', runSync);
+
+  // Intentar sincronizar cada 30 segundos si hay internet
+  setInterval(() => {
+    if (navigator.onLine) {
+      runSync();
+    }
+  }, 30000);
 }
 
 /**
