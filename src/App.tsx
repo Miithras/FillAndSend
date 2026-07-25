@@ -286,6 +286,7 @@ export function App() {
           <ReviewScreen
             state={state}
             onChangeDestinatario={email => setState(prev => ({ ...prev, destinatario: email }))}
+            onChangeConCopia={email => setState(prev => ({ ...prev, conCopia: email }))}
             onBackToSigners={() => setState(prev => ({ ...prev, screen: 'signers' }))}
             onSendDocument={handleSendDocument}
             onShareExcel={handleShareExcel}

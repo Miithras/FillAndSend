@@ -6,6 +6,7 @@ import { formatearRut } from '../utils/rut';
 interface ReviewScreenProps {
   state: AppState;
   onChangeDestinatario: (email: string) => void;
+  onChangeConCopia: (email: string) => void;
   onBackToSigners: () => void;
   onSendDocument: () => void;
   onShareExcel: () => void;
@@ -15,6 +16,7 @@ interface ReviewScreenProps {
 export const ReviewScreen: React.FC<ReviewScreenProps> = ({
   state,
   onChangeDestinatario,
+  onChangeConCopia,
   onBackToSigners,
   onSendDocument,
   onShareExcel,
@@ -36,7 +38,8 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
         <div className="banner ok">
           <b>¡Documento enviado correctamente!</b>
           <br />
-          Se ha enviado el correo a <span className="mono">{state.destinatario}</span> con el archivo Excel adjunto.
+          Se ha enviado el correo a <span className="mono">{state.destinatario}</span>
+          {state.conCopia ? <span> (con copia a <span className="mono">{state.conCopia}</span>)</span> : ''} con el archivo Excel adjunto.
         </div>
       )}
 
@@ -129,15 +132,26 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
         </div>
       )}
 
-      {/* CAMPO CORREO DESTINO */}
+      {/* CAMPOS DE CORREO DESTINO Y CON COPIA */}
       <div className="field" style={{ marginTop: 16 }}>
-        <label>Correo de jefatura (destino)</label>
+        <label>Correo de jefatura (destinatario principal)</label>
         <input
           type="email"
           value={state.destinatario}
           onChange={e => onChangeDestinatario(e.target.value)}
-          placeholder="jefatura@raycaingenieria.com"
+          placeholder="rgarcia@raycaingenieria.com"
         />
+      </div>
+
+      <div className="field">
+        <label>Correos en copia (CC — opcional)</label>
+        <input
+          type="text"
+          value={state.conCopia}
+          onChange={e => onChangeConCopia(e.target.value)}
+          placeholder="ej: prevencion@raycaingenieria.com, jefe@cliente.cl"
+        />
+        <div className="hint">Puedes agregar varios correos separados por coma.</div>
       </div>
 
       {!ready && (

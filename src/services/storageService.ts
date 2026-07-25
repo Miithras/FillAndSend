@@ -13,6 +13,7 @@ export const INITIAL_STATE: AppState = {
   signers: [],
   closingSig: null,
   destinatario: 'rgarcia@raycaingenieria.com',
+  conCopia: '',
   uiOpen: { tri0: true, tri1: true, multi0: true, multi1: true, multi2: true, multi3: true, multi4: true, risks: true, inc: true, finalf: true },
   sendStatus: 'idle',
   sendError: null

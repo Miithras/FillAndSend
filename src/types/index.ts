@@ -101,6 +101,7 @@ export interface AppState {
     [key: string]: any;
   } | null;
   destinatario: string;
+  conCopia: string;
   uiOpen: Record<string, boolean>;
   sendStatus: 'idle' | 'sending' | 'sent' | 'error';
   sendError: string | null;

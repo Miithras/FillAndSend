@@ -56,6 +56,7 @@ export async function sendDocumentEmail(state: AppState): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         to: state.destinatario,
+        cc: state.conCopia,
         subject,
         documentTitle: doc.label,
         summary,

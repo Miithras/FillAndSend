@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { to, subject, documentTitle, summary, filename, base64Attachment } = req.body;
+    const { to, cc, subject, documentTitle, summary, filename, base64Attachment } = req.body;
 
     if (!to || !subject || !base64Attachment) {
       return res.status(400).json({ error: 'Faltan parámetros requeridos (to, subject, base64Attachment)' });
@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     });
 
-    const mailOptions = {
+    const mailOptions: nodemailer.SendMailOptions = {
       from: `"ART Digital" <${user}>`,
       to,
       subject,
@@ -73,6 +73,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       ]
     };
+
+    if (cc) {
+      mailOptions.cc = cc;
+    }
 
     const info = await transporter.sendMail(mailOptions);
     return res.status(200).json({ success: true, messageId: info.messageId });
