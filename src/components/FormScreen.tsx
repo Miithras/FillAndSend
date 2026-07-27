@@ -3,6 +3,7 @@ import { AppState, RiskItem } from '../types';
 import { DOC_TYPES } from '../config/docTypes';
 import { WORKERS_DB } from '../config/workers';
 import { getTodayISODate } from '../services/storageService';
+import { RISK_ETAPAS, RISK_EVENTOS, RISK_MEDIDAS } from '../config/riskCatalog';
 
 interface FormScreenProps {
   state: AppState;
@@ -201,6 +202,19 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                 );
               })}
             </div>
+
+            {/* CAMPO TEXTO PARA VISITA EN TERRENO "OTRO" */}
+            {group.title.includes('IX. Visitas') && state.multi['4:Otro'] && (
+              <div className="field" style={{ marginTop: 10 }}>
+                <label>Especificar persona/visita (Otro)</label>
+                <input
+                  type="text"
+                  value={state.final.visitaOtro || ''}
+                  onChange={e => onChangeFinalField('visitaOtro', e.target.value)}
+                  placeholder="Ej: Pedro Morales (Inspector Técnico)"
+                />
+              </div>
+            )}
           </div>
         </div>
       ))}
@@ -213,38 +227,137 @@ export const FormScreen: React.FC<FormScreenProps> = ({
             <span className="chev">▾</span>
           </div>
           <div className="accordion-body">
-            {state.risks.map((r, i) => (
-              <div className="risk-row" key={i}>
-                <button className="del" onClick={() => onDeleteRisk(i)} title="Eliminar fila">✕</button>
-                <div className="field">
-                  <label>{doc.risks.qEtapa}</label>
-                  <input
-                    type="text"
-                    value={r.etapa}
-                    onChange={e => onChangeRisk(i, 'etapa', e.target.value)}
-                    placeholder="Ej: Instalación de escalera"
-                  />
+            {state.risks.map((r, i) => {
+              const etapaInCatalog = RISK_ETAPAS.includes(r.etapa);
+              const eventoInCatalog = RISK_EVENTOS.includes(r.evento);
+              const medidaInCatalog = RISK_MEDIDAS.includes(r.medida);
+
+              return (
+                <div className="risk-row" key={i}>
+                  <button className="del" onClick={() => onDeleteRisk(i)} title="Eliminar fila">✕</button>
+
+                  {/* ETAPA */}
+                  <div className="field">
+                    <label>{doc.risks.qEtapa}</label>
+                    <select
+                      value={etapaInCatalog ? r.etapa : (r.etapa ? 'Otro (especificar...)' : '')}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === 'Otro (especificar...)') {
+                          onChangeRisk(i, 'etapa', '');
+                        } else {
+                          onChangeRisk(i, 'etapa', val);
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '11px',
+                        background: 'var(--bg-1)',
+                        border: '1px solid var(--line)',
+                        color: 'var(--text-hi)',
+                        borderRadius: '10px',
+                        fontSize: '13.5px',
+                        marginBottom: 4
+                      }}
+                    >
+                      <option value="">-- Seleccionar etapa --</option>
+                      {RISK_ETAPAS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+
+                    {(!etapaInCatalog || r.etapa === '') && (
+                      <input
+                        type="text"
+                        value={r.etapa}
+                        onChange={e => onChangeRisk(i, 'etapa', e.target.value)}
+                        placeholder="Escribe la etapa personalizada..."
+                      />
+                    )}
+                  </div>
+
+                  {/* EVENTO / RIESGO */}
+                  <div className="field">
+                    <label>{doc.risks.qEvento}</label>
+                    <select
+                      value={eventoInCatalog ? r.evento : (r.evento ? 'Otro (especificar...)' : '')}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === 'Otro (especificar...)') {
+                          onChangeRisk(i, 'evento', '');
+                        } else {
+                          onChangeRisk(i, 'evento', val);
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '11px',
+                        background: 'var(--bg-1)',
+                        border: '1px solid var(--line)',
+                        color: 'var(--text-hi)',
+                        borderRadius: '10px',
+                        fontSize: '13.5px',
+                        marginBottom: 4
+                      }}
+                    >
+                      <option value="">-- Seleccionar riesgo/evento --</option>
+                      {RISK_EVENTOS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+
+                    {(!eventoInCatalog || r.evento === '') && (
+                      <input
+                        type="text"
+                        value={r.evento}
+                        onChange={e => onChangeRisk(i, 'evento', e.target.value)}
+                        placeholder="Escribe el riesgo/evento personalizado..."
+                      />
+                    )}
+                  </div>
+
+                  {/* MEDIDA DE CONTROL */}
+                  <div className="field">
+                    <label>{doc.risks.qMedida}</label>
+                    <select
+                      value={medidaInCatalog ? r.medida : (r.medida ? 'Otro (especificar...)' : '')}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === 'Otro (especificar...)') {
+                          onChangeRisk(i, 'medida', '');
+                        } else {
+                          onChangeRisk(i, 'medida', val);
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '11px',
+                        background: 'var(--bg-1)',
+                        border: '1px solid var(--line)',
+                        color: 'var(--text-hi)',
+                        borderRadius: '10px',
+                        fontSize: '13.5px',
+                        marginBottom: 4
+                      }}
+                    >
+                      <option value="">-- Seleccionar medida de control --</option>
+                      {RISK_MEDIDAS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+
+                    {(!medidaInCatalog || r.medida === '') && (
+                      <input
+                        type="text"
+                        value={r.medida}
+                        onChange={e => onChangeRisk(i, 'medida', e.target.value)}
+                        placeholder="Escribe la medida de control personalizada..."
+                      />
+                    )}
+                  </div>
                 </div>
-                <div className="field">
-                  <label>{doc.risks.qEvento}</label>
-                  <input
-                    type="text"
-                    value={r.evento}
-                    onChange={e => onChangeRisk(i, 'evento', e.target.value)}
-                    placeholder="Ej: Caída a distinto nivel"
-                  />
-                </div>
-                <div className="field">
-                  <label>{doc.risks.qMedida}</label>
-                  <input
-                    type="text"
-                    value={r.medida}
-                    onChange={e => onChangeRisk(i, 'medida', e.target.value)}
-                    placeholder="Ej: Uso de arnés de 3 puntas"
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
             <button className="add-row-btn" onClick={onAddRisk}>+ Agregar etapa de riesgo</button>
           </div>
         </div>

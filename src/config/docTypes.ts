@@ -43,7 +43,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
 
   art_normal: {
     id: 'art_normal',
-    label: 'ART Normal',
+    label: 'ART',
     accent: '#F5C400',
     icon: '⚠️',
     enabled: true,
@@ -112,7 +112,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
         items: [
           'Gerente General', 'Jefe de Operaciones', 'Supervisor General', 'Experto en Prevención RAYCA',
           'Experto en Prevención CLIENTE', 'Experto en Prevención USUARIO', 'Área Proyecto', 'Gestor Técnico Cliente',
-          'Encargado de Mantención de cliente o usuario'
+          'Encargado de Mantención de cliente o usuario', 'Otro'
         ]
       }
     ],
@@ -213,7 +213,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
         items: [
           'Gerente General', 'Jefe de Operaciones', 'Supervisor General', 'Experto en Prevención RAYCA',
           'Experto en Prevención CLIENTE', 'Experto en Prevención USUARIO', 'Área Proyecto', 'Gestor Técnico Cliente',
-          'Encargado de Mantención de cliente o usuario'
+          'Encargado de Mantención de cliente o usuario', 'Otro'
         ]
       }
     ],

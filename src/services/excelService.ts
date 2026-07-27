@@ -87,7 +87,13 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     if (state.multi['2:' + item]) ws.getCell('E' + row).value = 'X';
   });
   Object.entries(C.visitas).forEach(([item, [row, col]]) => {
-    if (state.multi['4:' + item]) ws.getCell(col + row).value = 'X';
+    if (state.multi['4:' + item]) {
+      ws.getCell(col + row).value = 'X';
+      if (item === 'Otro') {
+        const customVisita = state.final.visitaOtro || '';
+        writeLeftCell(ws, 'D148', customVisita);
+      }
+    }
   });
   Object.entries(C.incidentes).forEach(([item, row]) => {
     if (state.multi['inc:' + item]) ws.getCell('B' + row).value = 'X';

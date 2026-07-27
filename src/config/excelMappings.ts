@@ -36,7 +36,8 @@ export const ART_CELLS = {
   visitas: {
     'Gerente General': [145, 'B'], 'Jefe de Operaciones': [146, 'B'], 'Supervisor General': [147, 'B'],
     'Experto en Prevención RAYCA': [145, 'H'], 'Experto en Prevención CLIENTE': [146, 'H'], 'Experto en Prevención USUARIO': [147, 'H'],
-    'Área Proyecto': [145, 'O'], 'Gestor Técnico Cliente': [146, 'O'], 'Encargado de Mantención de cliente o usuario': [147, 'O']
+    'Área Proyecto': [145, 'O'], 'Gestor Técnico Cliente': [146, 'O'], 'Encargado de Mantención de cliente o usuario': [147, 'O'],
+    'Otro': [148, 'B']
   } as Record<string, [number, string]>,
 
   incidentes: {
@@ -44,7 +45,7 @@ export const ART_CELLS = {
   } as Record<string, number>,
 
   incidenteDesc: 'F137',
-  accionCorrectiva: 'A143',
+  accionCorrectiva: 'F142',
   eventualidades: 'A151',
   operariosRoster: { startRow: 117, endRow: 134, nombreCol: 'C', rutCol: 'F', cargoCol: 'I', tareasCol: 'L', firmaCol: 'R' },
   operariosExtraStart: 135,
