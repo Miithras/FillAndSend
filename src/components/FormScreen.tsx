@@ -1,6 +1,8 @@
 import React from 'react';
 import { AppState, RiskItem } from '../types';
 import { DOC_TYPES } from '../config/docTypes';
+import { WORKERS_DB } from '../config/workers';
+import { getTodayISODate } from '../services/storageService';
 
 interface FormScreenProps {
   state: AppState;
@@ -44,25 +46,93 @@ export const FormScreen: React.FC<FormScreenProps> = ({
           <span className="chev">▾</span>
         </div>
         <div className="accordion-body">
-          {doc.fields.map(f => (
-            <div className="field" key={f.id}>
-              <label>{f.label} {f.required ? '*' : ''}</label>
-              {f.type === 'textarea' ? (
-                <textarea
-                  value={state.form[f.id] || ''}
-                  onChange={e => onChangeField(f.id, e.target.value)}
-                  placeholder={f.label}
-                />
-              ) : (
-                <input
-                  type={f.type}
-                  value={state.form[f.id] || ''}
-                  onChange={e => onChangeField(f.id, e.target.value)}
-                  placeholder={f.label}
-                />
-              )}
+          {doc.fields.map(f => {
+            const isNameDropdown = f.id === 'instructor' || f.id === 'supervisor';
+            const isDateLocked = f.id === 'fecha';
+
+            return (
+              <div className="field" key={f.id}>
+                <label>
+                  {f.label} {f.required ? '*' : ''}
+                  {isDateLocked && <span style={{ fontSize: 11, color: 'var(--teal)', marginLeft: 6 }}>🔒 (Fecha de hoy)</span>}
+                </label>
+
+                {isNameDropdown ? (
+                  <div>
+                    <select
+                      className="select-worker"
+                      value={WORKERS_DB.some(w => w.nombre === state.form[f.id]) ? state.form[f.id] : (state.form[f.id] ? '__OTHER__' : '')}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === '__OTHER__') {
+                          onChangeField(f.id, '');
+                        } else {
+                          onChangeField(f.id, val);
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: 'var(--bg-1)',
+                        border: '1px solid var(--line)',
+                        color: 'var(--text-hi)',
+                        borderRadius: '10px',
+                        fontSize: '14px',
+                        marginBottom: 6
+                      }}
+                    >
+                      <option value="">-- Seleccionar de la lista --</option>
+                      {WORKERS_DB.map(w => (
+                        <option key={w.rut} value={w.nombre}>
+                          {w.nombre} ({w.cargo})
+                        </option>
+                      ))}
+                      <option value="__OTHER__">Otro (Ingresar manualmente)...</option>
+                    </select>
+
+                    {/* Si seleccionó Otro o no está en la lista pero escribió algo */}
+                    {(!WORKERS_DB.some(w => w.nombre === state.form[f.id]) || state.form[f.id] === '') && (
+                      <input
+                        type="text"
+                        value={state.form[f.id] || ''}
+                        onChange={e => onChangeField(f.id, e.target.value)}
+                        placeholder="Escribe el nombre completo..."
+                        style={{ marginTop: 4 }}
+                      />
+                    )}
+                  </div>
+                ) : f.type === 'textarea' ? (
+                  <textarea
+                    value={state.form[f.id] || ''}
+                    onChange={e => onChangeField(f.id, e.target.value)}
+                    placeholder={f.label}
+                  />
+                ) : isDateLocked ? (
+                  <input
+                    type="date"
+                    value={state.form[f.id] || getTodayISODate()}
+                    readOnly
+                    disabled
+                    style={{ opacity: 0.85, cursor: 'not-allowed', background: 'var(--bg-2)' }}
+                  />
+                ) : (
+                  <input
+                    type={f.type}
+                    value={state.form[f.id] || ''}
+                    onChange={e => onChangeField(f.id, e.target.value)}
+                    placeholder={f.label}
+                  />
+                )}
+              </div>
+            );
+          })}
+
+          {/* ALERTA VALIDACIÓN HORA DE TÉRMINO MENOR QUE INICIO */}
+          {state.form.horaInicio && state.form.horaTermino && state.form.horaTermino < state.form.horaInicio && (
+            <div className="banner" style={{ background: 'rgba(245,196,0,0.15)', borderColor: 'var(--yellow)', color: 'var(--yellow)', fontSize: 12, marginTop: 8 }}>
+              🌙 <b>Turno Nocturno detectado:</b> La hora de término (<b>{state.form.horaTermino}</b>) es menor que la de inicio (<b>{state.form.horaInicio}</b>). Se registrará como finalizado en la madrugada del día siguiente.
             </div>
-          ))}
+          )}
         </div>
       </div>
 

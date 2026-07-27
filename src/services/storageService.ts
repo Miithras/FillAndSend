@@ -2,10 +2,18 @@ import { AppState, DocTypeId } from '../types';
 
 const DRAFT_KEY = 'art_digital_draft_v2';
 
+export function getTodayISODate(): string {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export const INITIAL_STATE: AppState = {
   screen: 'select',
   docType: 'charla_inicial',
-  form: {},
+  form: { fecha: getTodayISODate() },
   tri: {},
   multi: {},
   risks: [],
@@ -32,7 +40,9 @@ export function loadDraft(): AppState | null {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    return { ...INITIAL_STATE, ...parsed, sendStatus: 'idle', sendError: null };
+    const state: AppState = { ...INITIAL_STATE, ...parsed, sendStatus: 'idle', sendError: null };
+    state.form = { ...state.form, fecha: getTodayISODate() }; // Forzar siempre fecha de hoy
+    return state;
   } catch (e) {
     console.error('Error al cargar borrador:', e);
     return null;

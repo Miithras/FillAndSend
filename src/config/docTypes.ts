@@ -11,7 +11,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
     meta: { codigo: 'REG-010', version: '06', fechaVersion: '03.06.2025', templateFile: 'REG-010.xlsx' },
     fields: [
       { id: 'instructor', label: 'Nombre de quién dictó la charla', type: 'text', required: true },
-      { id: 'usuario', label: 'Usuario (Lugar)', type: 'text', required: true },
+      { id: 'usuario', label: 'Lugar/Obra', type: 'text', required: true },
       { id: 'fecha', label: 'Fecha', type: 'date', required: true },
       { id: 'cliente', label: 'Cliente', type: 'text' },
       { id: 'horaInicio', label: 'Hora Inicio', type: 'time' },
@@ -52,7 +52,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
     fields: [
       { id: 'supervisor', label: 'Nombre del Supervisor o Encargado', type: 'text', required: true },
       { id: 'movil', label: 'Móvil', type: 'text' },
-      { id: 'usuario', label: 'Usuario (Lugar/Obra)', type: 'text', required: true },
+      { id: 'usuario', label: 'Lugar/Obra', type: 'text', required: true },
       { id: 'cliente', label: 'Cliente', type: 'text', required: true },
       { id: 'fecha', label: 'Fecha', type: 'date', required: true },
       { id: 'tipoTarea', label: 'Tipo de Tarea / Actividad', type: 'textarea', required: true },
@@ -153,7 +153,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
     fields: [
       { id: 'supervisor', label: 'Nombre del Supervisor o Encargado', type: 'text', required: true },
       { id: 'movil', label: 'Móvil', type: 'text' },
-      { id: 'usuario', label: 'Usuario (Lugar/Obra)', type: 'text', required: true },
+      { id: 'usuario', label: 'Lugar/Obra', type: 'text', required: true },
       { id: 'cliente', label: 'Cliente', type: 'text', required: true },
       { id: 'fecha', label: 'Fecha', type: 'date', required: true },
       { id: 'tipoTarea', label: 'Tipo de Tarea / Actividad', type: 'textarea', required: true },

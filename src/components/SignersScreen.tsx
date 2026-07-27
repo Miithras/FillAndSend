@@ -86,6 +86,21 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
       }
     }
 
+    // Validar duplicados por RUT o Nombre
+    const isDuplicate = state.signers.some(s => {
+      if (doc.signerSchema.rutRequired && s.rut && trimmedRut) {
+        const clean1 = s.rut.replace(/[^0-9kK]/g, '').toLowerCase();
+        const clean2 = trimmedRut.replace(/[^0-9kK]/g, '').toLowerCase();
+        if (clean1 === clean2) return true;
+      }
+      return s.nombre.trim().toLowerCase() === trimmedName.toLowerCase();
+    });
+
+    if (isDuplicate) {
+      onShowToast(`⚠️ El integrante "${trimmedName}" ya se encuentra agregado en la lista`, true);
+      return;
+    }
+
     const newSigner: Signer = {
       id: uid(),
       nombre: trimmedName,

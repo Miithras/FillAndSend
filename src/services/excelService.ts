@@ -28,28 +28,53 @@ async function addSignatureImageFit(workbook: ExcelJS.Workbook, ws: ExcelJS.Work
   } as any);
 }
 
+function writeLeftCell(ws: ExcelJS.Worksheet, addr: string, value: any) {
+  if (value === undefined || value === null || value === '') return;
+  const cell = ws.getCell(addr);
+  cell.value = value;
+  cell.alignment = { ...cell.alignment, horizontal: 'left', vertical: 'middle', wrapText: true };
+}
+
+function writeTriCell(ws: ExcelJS.Worksheet, addr: string, val?: string | null) {
+  const cell = ws.getCell(addr);
+  const cleanVal = val || 'NA'; // Requisito 8: por defecto N/A si no está seleccionado
+
+  if (cleanVal === 'SI') {
+    cell.value = 'SI';
+    cell.alignment = { ...cell.alignment, horizontal: 'left', vertical: 'middle' };
+  } else if (cleanVal === 'NO') {
+    cell.value = 'NO';
+    cell.alignment = { ...cell.alignment, horizontal: 'center', vertical: 'middle' };
+  } else {
+    cell.value = 'N/A';
+    cell.alignment = { ...cell.alignment, horizontal: 'right', vertical: 'middle' };
+  }
+}
+
 async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: ExcelJS.Worksheet) {
   const doc = DOC_TYPES[state.docType];
   const f = state.form;
   const C = ART_CELLS;
 
   Object.entries(C.header).forEach(([id, addr]) => {
-    if (f[id]) ws.getCell(addr).value = f[id];
+    if (f[id]) writeLeftCell(ws, addr, f[id]);
   });
 
+  // I. Verificación previa — grupo 0 (columna izquierda)
   (doc.triGroups[0]?.items || []).forEach((item, i) => {
     const row = C.triLeftRowStart + i;
     const val = state.tri['0:' + item];
-    if (val === 'SI') ws.getCell('H' + row).value = 'X';
-    else if (val === 'NO') ws.getCell('J' + row).value = 'NO';
-    else if (val === 'NA') ws.getCell('J' + row).value = 'N/A';
+    // Borrar celda H si contenía Marcas viejas X y usar celda J limpia
+    ws.getCell('H' + row).value = '';
+    writeTriCell(ws, 'J' + row, val);
   });
 
+  // I. Verificación previa — grupo 1 (columna derecha)
   (doc.triGroups[1]?.items || []).forEach((item, i) => {
     const row = C.triRightRows[i];
+    if (!row) return;
     const val = state.tri['1:' + item];
-    if (!row || !val) return;
-    ws.getCell('T' + row).value = val === 'SI' ? 'SI' : val === 'NO' ? 'NO' : 'N/A';
+    writeTriCell(ws, 'T' + row, val);
   });
 
   Object.entries(C.epp).forEach(([item, [row, col]]) => {
@@ -68,9 +93,9 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     if (state.multi['inc:' + item]) ws.getCell('B' + row).value = 'X';
   });
 
-  if (state.final.incidenteDesc) ws.getCell(C.incidenteDesc).value = state.final.incidenteDesc;
-  if (state.final.accionCorrectiva) ws.getCell(C.accionCorrectiva).value = state.final.accionCorrectiva;
-  if (state.final.eventualidades) ws.getCell(C.eventualidades).value = state.final.eventualidades;
+  if (state.final.incidenteDesc) writeLeftCell(ws, C.incidenteDesc, state.final.incidenteDesc);
+  if (state.final.accionCorrectiva) writeLeftCell(ws, C.accionCorrectiva, state.final.accionCorrectiva);
+  if (state.final.eventualidades) writeLeftCell(ws, C.eventualidades, state.final.eventualidades);
 
   // Operarios roster
   let nextExtraRow = C.operariosExtraStart;
@@ -88,18 +113,18 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
 
     if (!targetRow) {
       targetRow = nextExtraRow++;
-      ws.getCell(R.nombreCol + targetRow).value = s.nombre;
-      ws.getCell(R.rutCol + targetRow).value = formatearRut(s.rut);
-      ws.getCell(R.cargoCol + targetRow).value = s.cargo || '';
+      writeLeftCell(ws, R.nombreCol + targetRow, s.nombre);
+      writeLeftCell(ws, R.rutCol + targetRow, formatearRut(s.rut));
+      writeLeftCell(ws, R.cargoCol + targetRow, s.cargo || '');
     }
 
-    ws.getCell(R.tareasCol + targetRow).value = s.tareas || '';
+    writeLeftCell(ws, R.tareasCol + targetRow, s.tareas || '');
     await addSignatureImage(workbook, ws, s.firma, R.firmaCol, targetRow);
   }
 
   if (state.closingSig) {
-    ws.getCell(C.cierre.nombre).value = state.closingSig.nombre;
-    if (state.closingSig.cargo) ws.getCell(C.cierre.cargo).value = state.closingSig.cargo;
+    writeLeftCell(ws, C.cierre.nombre, state.closingSig.nombre);
+    if (state.closingSig.cargo) writeLeftCell(ws, C.cierre.cargo, state.closingSig.cargo);
     await addSignatureImageFit(workbook, ws, state.closingSig.firma, C.cierre.firmaRange);
   }
 }
@@ -109,13 +134,13 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
   const C = CHARLA_CELLS;
 
   Object.entries(C.header).forEach(([id, addr]) => {
-    if (f[id]) ws.getCell(addr).value = f[id];
+    if (f[id]) writeLeftCell(ws, addr, f[id]);
   });
   Object.entries(C.clasificacion).forEach(([item, [row, col]]) => {
     if (state.multi['0:' + item]) ws.getCell(col + row).value = 'X';
   });
-  if (state.final.mutual) ws.getCell(C.mutual).value = state.final.mutual;
-  if (state.final.comentarios) ws.getCell(C.comentarios).value = state.final.comentarios;
+  if (state.final.mutual) writeLeftCell(ws, C.mutual, state.final.mutual);
+  if (state.final.comentarios) writeLeftCell(ws, C.comentarios, state.final.comentarios);
 
   const cols = [C.participantesRoster.col1, C.participantesRoster.col2];
   let extraRow = C.participantesRoster.col1.endRow + 1;
@@ -134,19 +159,36 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
       if (placed) break;
     }
     if (!placed) {
-      ws.getCell(C.participantesRoster.col1.nombreCol + extraRow).value = s.nombre;
+      writeLeftCell(ws, C.participantesRoster.col1.nombreCol + extraRow, s.nombre);
       await addSignatureImage(workbook, ws, s.firma, C.participantesRoster.col1.firmaCol, extraRow);
       extraRow++;
     }
   }
 
   if (state.closingSig) {
-    ws.getCell(C.cierre.nombre).value = state.closingSig.nombre;
+    writeLeftCell(ws, C.cierre.nombre, state.closingSig.nombre);
     await addSignatureImageFit(workbook, ws, state.closingSig.firma, C.cierre.firmaRange);
   }
 }
 
-export async function buildExcelBlob(state: AppState): Promise<Blob> {
+export function ensureTriDefaults(state: AppState): AppState {
+  const doc = DOC_TYPES[state.docType];
+  const newTri = { ...state.tri };
+
+  (doc.triGroups || []).forEach((group, gIdx) => {
+    group.items.forEach(item => {
+      const key = `${gIdx}:${item}`;
+      if (!newTri[key]) {
+        newTri[key] = 'NA';
+      }
+    });
+  });
+
+  return { ...state, tri: newTri };
+}
+
+export async function buildExcelBlob(rawState: AppState): Promise<Blob> {
+  const state = ensureTriDefaults(rawState);
   const doc = DOC_TYPES[state.docType];
   const templateUrl = `./templates/${doc.meta.templateFile}`;
 

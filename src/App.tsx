@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { AppState, DocTypeId, RiskItem, Signer } from './types';
 import { INITIAL_STATE, saveDraft, loadDraft, clearDraft } from './services/storageService';
 import { sendDocumentEmail } from './services/emailService';
-import { downloadOriginalExcel, shareOriginalExcel } from './services/excelService';
+import { downloadOriginalExcel, shareOriginalExcel, ensureTriDefaults } from './services/excelService';
 import { saveToHistory, getHistory, setupAutoSync, updateHistoryStatus } from './services/historyService';
 
 import { Header } from './components/Header';
@@ -220,7 +220,7 @@ export function App() {
 
   // Handlers Envío (Optimista no bloqueante + Cola Offline)
   const handleSendDocument = async () => {
-    const currentSnapshot = JSON.parse(JSON.stringify(state));
+    const currentSnapshot = ensureTriDefaults(JSON.parse(JSON.stringify(state)));
 
     try {
       // 1. Guardar inmediatamente en historial como pendiente
