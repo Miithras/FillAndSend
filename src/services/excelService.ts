@@ -51,6 +51,13 @@ function writeTriCell(ws: ExcelJS.Worksheet, addr: string, val?: string | null) 
   }
 }
 
+function writeCenterCell(ws: ExcelJS.Worksheet, addr: string, value: any) {
+  if (value === undefined || value === null || value === '') return;
+  const cell = ws.getCell(addr);
+  cell.value = value;
+  cell.alignment = { ...cell.alignment, horizontal: 'center', vertical: 'middle', wrapText: true };
+}
+
 async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: ExcelJS.Worksheet) {
   const doc = DOC_TYPES[state.docType];
   const f = state.form;
@@ -129,8 +136,8 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
   }
 
   if (state.closingSig) {
-    writeLeftCell(ws, C.cierre.nombre, state.closingSig.nombre);
-    if (state.closingSig.cargo) writeLeftCell(ws, C.cierre.cargo, state.closingSig.cargo);
+    writeCenterCell(ws, C.cierre.nombre, state.closingSig.nombre);
+    if (state.closingSig.cargo) writeCenterCell(ws, C.cierre.cargo, state.closingSig.cargo);
     await addSignatureImageFit(workbook, ws, state.closingSig.firma, C.cierre.firmaRange);
   }
 }
@@ -172,7 +179,7 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
   }
 
   if (state.closingSig) {
-    writeLeftCell(ws, C.cierre.nombre, state.closingSig.nombre);
+    writeCenterCell(ws, C.cierre.nombre, state.closingSig.nombre);
     await addSignatureImageFit(workbook, ws, state.closingSig.firma, C.cierre.firmaRange);
   }
 }
