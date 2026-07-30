@@ -26,7 +26,7 @@ export const DocumentSelector: React.FC<DocumentSelectorProps> = ({
           ¿Deseas continuar donde quedaste o descartarlo para empezar uno nuevo?
           <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
             <button
-              style={{ flex: 1, background: 'var(--yellow)', color: '#ffffffff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold' }}
+              style={{ flex: 1, background: 'var(--yellow)', color: '#1A1400', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 'bold' }}
               onClick={onContinueDraft}
             >
               Continuar borrador
