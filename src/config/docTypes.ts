@@ -7,8 +7,8 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
     accent: '#2FB894',
     icon: '🗣️',
     enabled: true,
-    desc: 'Charla de seguridad inicial (5 minutos) — REG-010',
-    meta: { codigo: 'REG-010', version: '06', fechaVersion: '03.06.2025', templateFile: 'REG-010.xlsx' },
+    desc: 'Registro de Charla Inicial de Seguridad (REG-010)',
+    meta: { codigo: 'REG-010', version: '06', fechaVersion: '03.06.2025', templateFile: 'REG-010_v6 Charla Inicial.xlsx' },
     fields: [
       { id: 'instructor', label: 'Nombre de quién dictó la charla', type: 'text', required: true },
       { id: 'usuario', label: 'Lugar/Obra', type: 'text', required: true },
@@ -48,7 +48,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
     icon: '⚠️',
     enabled: true,
     desc: 'Análisis de Riesgos en el Trabajo — General (REG-009_A)',
-    meta: { codigo: 'REG-009_A', version: '06', fechaVersion: '03.06.2025', templateFile: 'REG-009_A.xlsx' },
+    meta: { codigo: 'REG-009_A', version: '06', fechaVersion: '03.06.2025', templateFile: 'REG-009_A_v6 ART 2.xlsx' },
     fields: [
       { id: 'supervisor', label: 'Nombre del Supervisor o Encargado', type: 'text', required: true },
       { id: 'movil', label: 'Móvil', type: 'text' },
@@ -146,10 +146,10 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
     id: 'art_mantencion',
     label: 'ART Mantención',
     accent: '#FF7A45',
-    icon: '🔧',
+    icon: '🛠️',
     enabled: true,
-    desc: 'Análisis de Riesgos en el Trabajo — Mantención (REG-009_B)',
-    meta: { codigo: 'REG-009_B', version: '06', fechaVersion: '03.06.2025', templateFile: 'REG-009_B.xlsx' },
+    desc: 'Análisis de Riesgos en el Trabajo — Mantención IRVE (REG-009_B)',
+    meta: { codigo: 'REG-009_B', version: '06', fechaVersion: '03.06.2025', templateFile: 'REG-009_B_v6 ART 2.xlsx' },
     fields: [
       { id: 'supervisor', label: 'Nombre del Supervisor o Encargado', type: 'text', required: true },
       { id: 'movil', label: 'Móvil', type: 'text' },

@@ -67,21 +67,24 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     if (f[id]) writeLeftCell(ws, addr, f[id]);
   });
 
-  // I. Verificación previa — grupo 0 (columna izquierda)
+  // I. Verificación previa — grupo 0 (filas 13 a 19)
   (doc.triGroups[0]?.items || []).forEach((item, i) => {
-    const row = C.triLeftRowStart + i;
-    const val = state.tri['0:' + item];
-    // Borrar celda H si contenía Marcas viejas X y usar celda J limpia
-    ws.getCell('H' + row).value = '';
-    writeTriCell(ws, 'J' + row, val);
+    const row = C.triLeftRows[i];
+    if (!row) return;
+    const val = state.tri['0:' + item] || 'NA';
+    if (val === 'SI') ws.getCell('E' + row).value = 'X';
+    else if (val === 'NO') ws.getCell('F' + row).value = 'X';
+    else ws.getCell('G' + row).value = 'X';
   });
 
-  // I. Verificación previa — grupo 1 (columna derecha)
+  // I. Verificación previa — grupo 1 (filas 20 a 29)
   (doc.triGroups[1]?.items || []).forEach((item, i) => {
     const row = C.triRightRows[i];
     if (!row) return;
-    const val = state.tri['1:' + item];
-    writeTriCell(ws, 'T' + row, val);
+    const val = state.tri['1:' + item] || 'NA';
+    if (val === 'SI') ws.getCell('E' + row).value = 'X';
+    else if (val === 'NO') ws.getCell('F' + row).value = 'X';
+    else ws.getCell('G' + row).value = 'X';
   });
 
   Object.entries(C.epp).forEach(([item, [row, col]]) => {
@@ -91,26 +94,38 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     if (state.multi['3:' + item]) ws.getCell(col + row).value = 'X';
   });
   Object.entries(C.aspectos).forEach(([item, row]) => {
-    if (state.multi['2:' + item]) ws.getCell('E' + row).value = 'X';
+    if (state.multi['2:' + item]) ws.getCell('C' + row).value = 'X';
   });
   Object.entries(C.visitas).forEach(([item, [row, col]]) => {
     if (state.multi['4:' + item]) {
       ws.getCell(col + row).value = 'X';
       if (item === 'Otro') {
         const customVisita = state.final.visitaOtro || '';
-        writeLeftCell(ws, 'D148', customVisita);
+        writeLeftCell(ws, 'F92', customVisita);
       }
     }
   });
   Object.entries(C.incidentes).forEach(([item, row]) => {
-    if (state.multi['inc:' + item]) ws.getCell('B' + row).value = 'X';
+    if (state.multi['inc:' + item]) ws.getCell('A' + row).value = 'X';
   });
 
   if (state.final.incidenteDesc) writeLeftCell(ws, C.incidenteDesc, state.final.incidenteDesc);
   if (state.final.accionCorrectiva) writeLeftCell(ws, C.accionCorrectiva, state.final.accionCorrectiva);
   if (state.final.eventualidades) writeLeftCell(ws, C.eventualidades, state.final.eventualidades);
 
-  // Operarios roster
+  // VI. Análisis de Riesgos en el Trabajo
+  if (state.risks && state.risks.length > 0) {
+    state.risks.forEach((r, idx) => {
+      const row = 75 + idx;
+      if (row <= 75) {
+        if (r.etapa) writeLeftCell(ws, 'A' + row, r.etapa);
+        if (r.evento) writeLeftCell(ws, 'C' + row, r.evento);
+        if (r.medida) writeLeftCell(ws, 'F' + row, r.medida);
+      }
+    });
+  }
+
+  // VII. Operarios roster
   let nextExtraRow = C.operariosExtraStart;
   for (const s of state.signers) {
     const R = C.operariosRoster;
