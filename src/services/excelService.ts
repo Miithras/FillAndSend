@@ -3,6 +3,7 @@ import { AppState } from '../types';
 import { DOC_TYPES } from '../config/docTypes';
 import { ART_CELLS, CHARLA_CELLS, colToIndex } from '../config/excelMappings';
 import { formatearRut } from '../utils/rut';
+import { getTodayISODate, formatDateChilean } from './storageService';
 
 async function addSignatureImage(workbook: ExcelJS.Workbook, ws: ExcelJS.Worksheet, dataUrl: string | null, colLetter: string, row: number) {
   if (!dataUrl) return;
@@ -64,7 +65,12 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
   const C = ART_CELLS;
 
   Object.entries(C.header).forEach(([id, addr]) => {
-    if (f[id]) writeLeftCell(ws, addr, f[id]);
+    if (id === 'fecha') {
+      const fechaVal = formatDateChilean(f.fecha || getTodayISODate());
+      writeCenterCell(ws, addr, fechaVal);
+    } else if (f[id]) {
+      writeLeftCell(ws, addr, f[id]);
+    }
   });
 
   // I. Verificación previa — grupo 0 (filas 13 a 19)
@@ -132,47 +138,58 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
   if (state.final.accionCorrectiva) writeLeftCell(ws, C.accionCorrectiva, state.final.accionCorrectiva);
   if (state.final.eventualidades) writeLeftCell(ws, C.eventualidades, state.final.eventualidades);
 
-  // VI. Análisis de Riesgos en el Trabajo
+  // VI. Análisis de Riesgos en el Trabajo (dinámico)
+  let insertedRiskRowsCount = 0;
   if (state.risks && state.risks.length > 0) {
     state.risks.forEach((r, idx) => {
       const row = 75 + idx;
-      if (row <= 75) {
-        if (r.etapa) writeLeftCell(ws, 'A' + row, r.etapa);
-        if (r.evento) writeLeftCell(ws, 'C' + row, r.evento);
-        if (r.medida) writeLeftCell(ws, 'F' + row, r.medida);
+      if (idx > 0) {
+        ws.spliceRows(row, 0, []);
+        insertedRiskRowsCount++;
+        try {
+          ws.mergeCells(`A${row}:B${row}`);
+          ws.mergeCells(`C${row}:E${row}`);
+          ws.mergeCells(`F${row}:H${row}`);
+        } catch (e) {}
       }
+      if (r.etapa) writeLeftCell(ws, 'A' + row, r.etapa);
+      if (r.evento) writeLeftCell(ws, 'C' + row, r.evento);
+      if (r.medida) writeLeftCell(ws, 'F' + row, r.medida);
     });
   }
 
-  // VII. Operarios roster
-  let nextExtraRow = C.operariosExtraStart;
-  for (const s of state.signers) {
-    const R = C.operariosRoster;
-    let targetRow: number | null = null;
+  // VII. Operarios roster (dinámico)
+  const operariosBaseRow = 79 + insertedRiskRowsCount;
+  for (let i = 0; i < state.signers.length; i++) {
+    const s = state.signers[i];
+    const row = operariosBaseRow + i;
 
-    for (let r = R.startRow; r <= R.endRow; r++) {
-      const cellName = (ws.getCell(R.nombreCol + r).value || '').toString().trim().toLowerCase();
-      if (cellName && cellName === s.nombre.trim().toLowerCase()) {
-        targetRow = r;
-        break;
-      }
+    if (i > 0) {
+      ws.spliceRows(row, 0, []);
+      try {
+        ws.mergeCells(`B${row}:C${row}`);
+        ws.mergeCells(`E${row}:F${row}`);
+        ws.mergeCells(`G${row}:H${row}`);
+      } catch (e) {}
     }
 
-    if (!targetRow) {
-      targetRow = nextExtraRow++;
-      writeLeftCell(ws, R.nombreCol + targetRow, s.nombre);
-      writeLeftCell(ws, R.rutCol + targetRow, formatearRut(s.rut));
-      writeLeftCell(ws, R.cargoCol + targetRow, s.cargo || '');
-    }
-
-    writeLeftCell(ws, R.tareasCol + targetRow, s.tareas || '');
-    await addSignatureImage(workbook, ws, s.firma, R.firmaCol, targetRow);
+    writeLeftCell(ws, 'B' + row, s.nombre);
+    writeLeftCell(ws, 'D' + row, formatearRut(s.rut));
+    writeLeftCell(ws, 'E' + row, s.cargo || '');
+    writeLeftCell(ws, 'G' + row, s.tareas || '');
+    await addSignatureImage(workbook, ws, s.firma, 'A', row);
   }
 
+  // Ajustar filas posteriores por inserción
+  const shift = insertedRiskRowsCount + Math.max(0, state.signers.length - 1);
+  const cierreNombreRow = 102 + shift;
+  const cierreCargoRow = 102 + shift;
+  const cierreFirmaRange = `F${102 + shift}:H${102 + shift}`;
+
   if (state.closingSig) {
-    writeCenterCell(ws, C.cierre.nombre, state.closingSig.nombre);
-    if (state.closingSig.cargo) writeCenterCell(ws, C.cierre.cargo, state.closingSig.cargo);
-    await addSignatureImageFit(workbook, ws, state.closingSig.firma, C.cierre.firmaRange);
+    writeCenterCell(ws, 'A' + cierreNombreRow, state.closingSig.nombre);
+    if (state.closingSig.cargo) writeCenterCell(ws, 'D' + cierreCargoRow, state.closingSig.cargo);
+    await addSignatureImageFit(workbook, ws, state.closingSig.firma, cierreFirmaRange);
   }
 }
 
@@ -181,7 +198,12 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
   const C = CHARLA_CELLS;
 
   Object.entries(C.header).forEach(([id, addr]) => {
-    if (f[id]) writeLeftCell(ws, addr, f[id]);
+    if (id === 'fecha') {
+      const fechaVal = formatDateChilean(f.fecha || getTodayISODate());
+      writeCenterCell(ws, addr, fechaVal);
+    } else if (f[id]) {
+      writeLeftCell(ws, addr, f[id]);
+    }
   });
   Object.entries(C.clasificacion).forEach(([item, [row, col]]) => {
     if (state.multi['0:' + item]) {
@@ -218,8 +240,8 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
   }
 
   if (state.closingSig) {
-    writeCenterCell(ws, C.cierre.nombre, state.closingSig.nombre);
-    await addSignatureImageFit(workbook, ws, state.closingSig.firma, C.cierre.firmaRange);
+    writeCenterCell(ws, 'A40', state.closingSig.nombre);
+    await addSignatureImageFit(workbook, ws, state.closingSig.firma, 'F38:H40');
   }
 }
 

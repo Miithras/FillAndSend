@@ -10,6 +10,21 @@ export function getTodayISODate(): string {
   return `${year}-${month}-${day}`;
 }
 
+export function formatDateChilean(isoDateStr?: string): string {
+  if (!isoDateStr) {
+    const d = new Date();
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+  const parts = isoDateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return isoDateStr;
+}
+
 export const INITIAL_STATE: AppState = {
   screen: 'select',
   docType: 'charla_inicial',

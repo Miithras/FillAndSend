@@ -32,8 +32,13 @@ export default defineConfig({
         ]
       },
       workbox: {
+        cleanupOutdatedCaches: true,
+        maximumFileSizeToCacheInBytes: 5000000,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,xlsx}']
       }
     })
-  ]
+  ],
+  build: {
+    chunkSizeWarningLimit: 2000
+  }
 });
