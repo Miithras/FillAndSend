@@ -122,6 +122,74 @@ header.topbar {
   background: var(--orange);
 }
 
+/* STEPPER / WIZARD NO LINEAL */
+.stepper-bar {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  background: var(--bg-1);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 57px;
+  z-index: 15;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.stepper-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.stepper-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--text-mid);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.stepper-tab.active {
+  background: var(--yellow);
+  color: #12151C;
+  border-color: var(--yellow-dark);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(245, 196, 0, 0.3);
+}
+
+.stepper-tab .stepper-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.stepper-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 12px 0 24px 0;
+}
+
+.stepper-nav button {
+  flex: 1;
+  margin-top: 0;
+}
+
 /* CARDS DOCUMENTOS */
 .doc-card {
   background: var(--bg-1);
