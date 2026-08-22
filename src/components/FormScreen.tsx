@@ -92,7 +92,7 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                   <div className="field" key={f.id}>
                     <label>
                       {f.label} {f.required ? '*' : ''}
-                      {isDateLocked && <span style={{ fontSize: 11, color: 'var(--teal)', marginLeft: 6 }}>🔒 (Fecha de hoy)</span>}
+                      {isDateLocked && <span style={{ fontSize: 11, color: 'var(--cyan)', marginLeft: 6 }}>🔒 (Fecha de hoy)</span>}
                     </label>
 
                     {isNameDropdown ? (
@@ -165,7 +165,7 @@ export const FormScreen: React.FC<FormScreenProps> = ({
               })}
 
               {state.form.horaInicio && state.form.horaTermino && state.form.horaTermino < state.form.horaInicio && (
-                <div className="banner" style={{ background: 'rgba(245,196,0,0.15)', borderColor: 'var(--yellow)', color: 'var(--yellow-dark)', fontSize: 12, marginTop: 8 }}>
+                <div className="banner" style={{ background: 'rgba(0, 160, 184, 0.08)', borderColor: 'var(--cyan)', color: 'var(--navy)', fontSize: 12, marginTop: 8 }}>
                   🌙 <b>Turno Nocturno detectado:</b> La hora de término (<b>{state.form.horaTermino}</b>) es menor que la de inicio (<b>{state.form.horaInicio}</b>). Se registrará como finalizado en la madrugada del día siguiente.
                 </div>
               )}

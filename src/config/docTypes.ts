@@ -4,7 +4,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
   charla_inicial: {
     id: 'charla_inicial',
     label: 'Charla Inicial',
-    accent: '#2FB894',
+    accent: '#00A0B8',
     icon: '🗣️',
     enabled: true,
     desc: 'Registro de Charla Inicial de Seguridad (REG-010)',
@@ -44,7 +44,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
   art_normal: {
     id: 'art_normal',
     label: 'ART',
-    accent: '#F5C400',
+    accent: '#001E59',
     icon: '⚠️',
     enabled: true,
     desc: 'Análisis de Riesgos en el Trabajo — General (REG-009_A)',
@@ -119,9 +119,9 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
     risks: {
       enabled: true,
       title: 'VI. Análisis de Riesgos en el Trabajo',
-      qEtapa: '¿Qué voy a hacer? (etapa del trabajo)',
-      qEvento: '¿Cómo me podría accidentar?',
-      qMedida: '¿Qué haré para evitarlo?'
+      qEtapa: 'Etapas del trabajo ¿Qué voy a hacer?',
+      qEvento: 'Evento no deseado ¿Cómo me podría accidentar?',
+      qMedida: 'Medidas de control ¿Qué haré para evitarlo?'
     },
     incidentes: {
       enabled: true,
@@ -129,11 +129,14 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
       items: ['Incidente Seguridad', 'Incidente Ambiental', 'Incidente Calidad', 'Near Miss', 'Stop Work']
     },
     finalFields: [
-      { id: 'eventualidades', label: 'X. Eventualidades', type: 'textarea' }
+      { id: 'eventualidades', label: 'X. Eventualidades y Notas', type: 'textarea' }
     ],
     signerSchema: {
       rutRequired: true,
-      extra: [{ id: 'cargo', label: 'Cargo' }, { id: 'tareas', label: 'Tareas Asignadas' }]
+      extra: [
+        { id: 'cargo', label: 'Cargo' },
+        { id: 'tareas', label: 'Tareas asignadas' }
+      ]
     },
     closing: {
       enabled: true,
@@ -145,7 +148,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
   art_mantencion: {
     id: 'art_mantencion',
     label: 'ART Mantención',
-    accent: '#FF7A45',
+    accent: '#56659F',
     icon: '🛠️',
     enabled: true,
     desc: 'Análisis de Riesgos en el Trabajo — Mantención IRVE (REG-009_B)',

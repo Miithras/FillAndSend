@@ -44,8 +44,8 @@ export const Header: React.FC<HeaderProps> = ({ state, onOpenHistory, historyCou
             {historyCount > 0 && (
               <span
                 style={{
-                  background: 'var(--yellow)',
-                  color: '#12151C',
+                  background: 'var(--cyan)',
+                  color: 'var(--white)',
                   fontSize: '10px',
                   fontWeight: 800,
                   borderRadius: '10px',

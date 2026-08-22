@@ -22,7 +22,7 @@ export const SignatureModal: React.FC<SignatureModalProps> = ({ title, onSave, o
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.scale(ratio, ratio);
-      ctx.strokeStyle = '#F5C400';
+      ctx.strokeStyle = '#00A0B8';
       ctx.lineWidth = 2.5;
       ctx.lineCap = 'round';
     }

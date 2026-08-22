@@ -91,17 +91,17 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, onLoadState
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <h4 style={{ margin: 0 }}>{r.title} — <span className="mono">{r.code}</span></h4>
                     {r.status === 'sent' && (
-                      <span style={{ fontSize: 10, background: 'rgba(47,184,148,0.2)', color: 'var(--teal)', border: '1px solid var(--teal)', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>
+                      <span style={{ fontSize: 10, background: 'rgba(0,160,184,0.15)', color: 'var(--cyan)', border: '1px solid var(--cyan)', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>
                         🟢 Enviado
                       </span>
                     )}
                     {r.status === 'pending_send' && (
-                      <span style={{ fontSize: 10, background: 'rgba(245,196,0,0.2)', color: 'var(--yellow)', border: '1px solid var(--yellow)', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>
+                      <span style={{ fontSize: 10, background: 'rgba(86,101,159,0.15)', color: 'var(--slate)', border: '1px solid var(--slate)', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>
                         🟡 Pendiente (Sin conexión)
                       </span>
                     )}
                     {r.status === 'error' && (
-                      <span style={{ fontSize: 10, background: 'rgba(255,91,91,0.2)', color: 'var(--danger)', border: '1px solid var(--danger)', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>
+                      <span style={{ fontSize: 10, background: 'rgba(220,38,38,0.15)', color: 'var(--danger)', border: '1px solid var(--danger)', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>
                         🔴 Error de envío
                       </span>
                     )}
@@ -122,11 +122,11 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, onLoadState
                 </button>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--line)', fontSize: 11, color: 'var(--yellow)' }}>
-                <span>🕒 Expira en: <b>{getTimeRemaining(r.expiresAt)}</b></span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--line)', fontSize: 11, color: 'var(--slate)' }}>
+                <span>🕒 Expira en: <b style={{ color: 'var(--navy)' }}>{getTimeRemaining(r.expiresAt)}</b></span>
                 <button
                   className="btn-ghost"
-                  style={{ padding: 0, textDecoration: 'underline', color: 'var(--teal)' }}
+                  style={{ padding: 0, textDecoration: 'underline', color: 'var(--cyan)' }}
                   onClick={() => {
                     onLoadState(r.state);
                     onClose();
