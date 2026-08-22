@@ -88,20 +88,39 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
   });
 
   Object.entries(C.epp).forEach(([item, [row, col]]) => {
-    if (state.multi['0:' + item]) ws.getCell(col + row).value = 'X';
+    if (state.multi['0:' + item]) {
+      ws.getCell(col + row).value = 'X';
+      if (item === 'Otro' && state.final.eppOtro) {
+        writeLeftCell(ws, 'B' + row, state.final.eppOtro);
+      }
+    }
   });
+
   Object.entries(C.altoRiesgo).forEach(([item, [row, col]]) => {
-    if (state.multi['3:' + item]) ws.getCell(col + row).value = 'X';
+    if (state.multi['3:' + item]) {
+      ws.getCell(col + row).value = 'X';
+      if (item === 'Otro' && state.final.altoRiesgoOtro) {
+        const labelCol = col === 'A' ? 'B' : 'E';
+        writeLeftCell(ws, labelCol + row, state.final.altoRiesgoOtro);
+      }
+    }
   });
+
   Object.entries(C.aspectos).forEach(([item, row]) => {
-    if (state.multi['2:' + item]) ws.getCell('C' + row).value = 'X';
+    if (state.multi['2:' + item]) {
+      ws.getCell('C' + row).value = 'X';
+      if (item === 'Otro' && state.final.aspectosOtro) {
+        writeLeftCell(ws, 'D' + row, state.final.aspectosOtro);
+      }
+    }
   });
+
   Object.entries(C.visitas).forEach(([item, [row, col]]) => {
     if (state.multi['4:' + item]) {
       ws.getCell(col + row).value = 'X';
-      if (item === 'Otro') {
-        const customVisita = state.final.visitaOtro || '';
-        writeLeftCell(ws, 'F92', customVisita);
+      if (item === 'Otro' && state.final.visitaOtro) {
+        const labelCol = col === 'A' ? 'B' : 'E';
+        writeLeftCell(ws, labelCol + row, state.final.visitaOtro);
       }
     }
   });
@@ -165,7 +184,12 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
     if (f[id]) writeLeftCell(ws, addr, f[id]);
   });
   Object.entries(C.clasificacion).forEach(([item, [row, col]]) => {
-    if (state.multi['0:' + item]) ws.getCell(col + row).value = 'X';
+    if (state.multi['0:' + item]) {
+      ws.getCell(col + row).value = 'X';
+      if (item === 'Otro' && state.final.clasificacionOtro) {
+        writeLeftCell(ws, 'F' + row, state.final.clasificacionOtro);
+      }
+    }
   });
   if (state.final.mutual) writeLeftCell(ws, C.mutual, state.final.mutual);
   if (state.final.comentarios) writeLeftCell(ws, C.comentarios, state.final.comentarios);

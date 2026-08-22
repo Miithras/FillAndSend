@@ -86,25 +86,25 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
           'Careta Dieléctrica', 'Esclavina Ignífuga', 'Guantes Dieléctricos', 'Guantes Protector de Dieléctricos', 'Ropa Ignífuga',
           'Detector de Tensión personal', 'Manta Dieléctrica', 'Tarjeta de bloqueo y/o candado', 'Arnés de Seguridad',
           'Amortiguador de impacto', 'Cabo de vida', 'Careta Facial', 'Careta para soldar', 'Coleto de Cuero', 'Chaleco Reflectante',
-          'Legionario', 'Protector solar', 'Barreras (cinta, conos, barras)'
+          'Legionario', 'Protector solar', 'Barreras (cinta, conos, barras)', 'Otro'
         ]
       },
       {
         title: 'III. Máquinas y/o Vehículos a utilizar',
         items: [
           'Camión Pluma', 'Alzahombre', 'Brazo Articulado', 'Grúa Horquilla', 'Traspaleta', 'Placa Compactadora', 'Cango',
-          'Trompo', 'Testiguera', 'Tronzadora'
+          'Trompo', 'Testiguera', 'Tronzadora', 'Otro'
         ]
       },
       {
         title: 'IV. Aspectos Ambientales identificados',
-        items: ['Derrames', 'Aguas Servidas', 'Escombros', 'Emisión de Polvo', 'Despuntes de PVC', 'Restos de Cables']
+        items: ['Derrames', 'Aguas Servidas', 'Escombros', 'Emisión de Polvo', 'Despuntes de PVC', 'Restos de Cables', 'Otro']
       },
       {
         title: 'V. Actividades de Alto Riesgo',
         items: [
           'Conducción de Vehículos', 'Trabajos en Altura (sobre 1,5 mts.)', 'Trabajos en Caliente', 'Carga suspendida / Izaje',
-          'Espacios confinados y/o cerrados', 'Electricidad', 'Trabajos de otras Empresas', 'Maquinaria en movimiento'
+          'Espacios confinados y/o cerrados', 'Electricidad', 'Trabajos de otras Empresas', 'Maquinaria en movimiento', 'Otro'
         ]
       },
       {
@@ -187,25 +187,25 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
           'Careta Dieléctrica', 'Esclavina Ignífuga', 'Guantes Dieléctricos', 'Guantes Protector de Dieléctricos', 'Ropa Ignífuga',
           'Detector de Tensión personal', 'Manta Dieléctrica', 'Tarjeta de bloqueo y/o candado', 'Arnés de Seguridad',
           'Amortiguador de impacto', 'Cabo de vida', 'Careta Facial', 'Careta para soldar', 'Coleto de Cuero', 'Chaleco Reflectante',
-          'Legionario', 'Protector solar', 'Barreras (cinta, conos, barras)'
+          'Legionario', 'Protector solar', 'Barreras (cinta, conos, barras)', 'Otro'
         ]
       },
       {
         title: 'III. Máquinas y/o Vehículos a utilizar',
         items: [
           'Camión Pluma', 'Alzahombre', 'Brazo Articulado', 'Grúa Horquilla', 'Traspaleta', 'Placa Compactadora', 'Cango',
-          'Trompo', 'Testiguera', 'Tronzadora'
+          'Trompo', 'Testiguera', 'Tronzadora', 'Otro'
         ]
       },
       {
         title: 'IV. Aspectos Ambientales identificados',
-        items: ['Derrames', 'Aguas Servidas', 'Escombros', 'Emisión de Polvo', 'Despuntes de PVC', 'Restos de Cables']
+        items: ['Derrames', 'Aguas Servidas', 'Escombros', 'Emisión de Polvo', 'Despuntes de PVC', 'Restos de Cables', 'Otro']
       },
       {
         title: 'V. Actividades de Alto Riesgo',
         items: [
           'Conducción de Vehículos', 'Trabajos en Altura (sobre 1,5 mts.)', 'Trabajos en Caliente', 'Carga suspendida / Izaje',
-          'Espacios confinados y/o cerrados', 'Electricidad', 'Trabajos de otras Empresas', 'Maquinaria en movimiento'
+          'Espacios confinados y/o cerrados', 'Electricidad', 'Trabajos de otras Empresas', 'Maquinaria en movimiento', 'Otro'
         ]
       },
       {

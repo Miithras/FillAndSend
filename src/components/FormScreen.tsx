@@ -203,15 +203,31 @@ export const FormScreen: React.FC<FormScreenProps> = ({
               })}
             </div>
 
-            {/* CAMPO TEXTO PARA VISITA EN TERRENO "OTRO" */}
-            {group.title.includes('IX. Visitas') && state.multi['4:Otro'] && (
+            {/* CAMPO TEXTO PARA CUALQUIER OPCIÓN "OTRO" SELECCIONADA EN MULTIGROUPS */}
+            {state.multi[`${mIdx}:Otro`] && (
               <div className="field" style={{ marginTop: 10 }}>
-                <label>Especificar persona/visita (Otro)</label>
+                <label>Especificar {group.title.split('.')[1] || group.title} (Otro)</label>
                 <input
                   type="text"
-                  value={state.final.visitaOtro || ''}
-                  onChange={e => onChangeFinalField('visitaOtro', e.target.value)}
-                  placeholder="Ej: Pedro Morales (Inspector Técnico)"
+                  value={
+                    mIdx === 0 ? (state.final.eppOtro || '') :
+                    mIdx === 1 ? (state.final.maquinasOtro || '') :
+                    mIdx === 2 ? (state.final.aspectosOtro || '') :
+                    mIdx === 3 ? (state.final.altoRiesgoOtro || '') :
+                    mIdx === 4 ? (state.final.visitaOtro || '') :
+                    (state.final[`otro_${mIdx}`] || '')
+                  }
+                  onChange={e => {
+                    const fieldKey =
+                      mIdx === 0 ? 'eppOtro' :
+                      mIdx === 1 ? 'maquinasOtro' :
+                      mIdx === 2 ? 'aspectosOtro' :
+                      mIdx === 3 ? 'altoRiesgoOtro' :
+                      mIdx === 4 ? 'visitaOtro' :
+                      `otro_${mIdx}`;
+                    onChangeFinalField(fieldKey, e.target.value);
+                  }}
+                  placeholder="Escribe la especificación para 'Otro'..."
                 />
               </div>
             )}
