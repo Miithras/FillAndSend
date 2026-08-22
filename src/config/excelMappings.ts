@@ -44,9 +44,9 @@ export const ART_CELLS = {
     'Incidente Seguridad': 83, 'Incidente Ambiental': 84, 'Incidente Calidad': 85, 'Near Miss': 86, 'Stop Work': 87
   } as Record<string, number>,
 
-  incidenteDesc: 'C82',
-  accionCorrectiva: 'F82',
-  eventualidades: 'A94',
+  incidenteDesc: 'C83',
+  accionCorrectiva: 'F83',
+  eventualidades: 'A95',
   operariosRoster: { startRow: 79, endRow: 85, firmaCol: 'A', nombreCol: 'B', rutCol: 'D', cargoCol: 'E', tareasCol: 'G' },
   operariosExtraStart: 80,
   cierre: { nombre: 'A102', cargo: 'D102', firmaRange: 'F102:H102' }
