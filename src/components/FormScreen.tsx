@@ -53,6 +53,11 @@ export const FormScreen: React.FC<FormScreenProps> = ({
   const [activeStep, setActiveStep] = useState(0);
   const currentStepId = STEPS[activeStep]?.id || 'general';
 
+  const goToStep = (newStep: number) => {
+    setActiveStep(newStep);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="form-screen">
       <button className="back-link" onClick={onBackToSelect}>
@@ -65,7 +70,7 @@ export const FormScreen: React.FC<FormScreenProps> = ({
           <button
             key={s.id}
             className={`stepper-tab ${activeStep === idx ? 'active' : ''}`}
-            onClick={() => setActiveStep(idx)}
+            onClick={() => goToStep(idx)}
             type="button"
           >
             <span className="stepper-num">{idx + 1}</span>
@@ -521,7 +526,7 @@ export const FormScreen: React.FC<FormScreenProps> = ({
         <button
           className="btn-secondary"
           disabled={activeStep === 0}
-          onClick={() => setActiveStep(Math.max(0, activeStep - 1))}
+          onClick={() => goToStep(Math.max(0, activeStep - 1))}
           type="button"
         >
           ← Anterior
@@ -530,7 +535,7 @@ export const FormScreen: React.FC<FormScreenProps> = ({
         {activeStep < STEPS.length - 1 ? (
           <button
             className="btn-primary"
-            onClick={() => setActiveStep(activeStep + 1)}
+            onClick={() => goToStep(activeStep + 1)}
             type="button"
           >
             Siguiente paso →
@@ -538,7 +543,10 @@ export const FormScreen: React.FC<FormScreenProps> = ({
         ) : (
           <button
             className="btn-primary"
-            onClick={onGoToSigners}
+            onClick={() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              onGoToSigners();
+            }}
             type="button"
           >
             Continuar a firmas →
