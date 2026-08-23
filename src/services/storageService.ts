@@ -1,4 +1,5 @@
 import { AppState, DocTypeId } from '../types';
+import { sanitizeTextInput, sanitizeHeaderValue } from '../utils/sanitize';
 
 const DRAFT_KEY = 'art_digital_draft_v2';
 
@@ -22,7 +23,7 @@ export function formatDateChilean(isoDateStr?: string): string {
   if (parts.length === 3) {
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
-  return isoDateStr;
+  return sanitizeTextInput(isoDateStr, 20);
 }
 
 export const INITIAL_STATE: AppState = {
@@ -44,9 +45,43 @@ export const INITIAL_STATE: AppState = {
 
 export function saveDraft(state: AppState): void {
   try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(state));
+    // Sanitizar objeto antes de persistir
+    const safeDraft = {
+      docType: state.docType,
+      form: state.form || {},
+      tri: state.tri || {},
+      multi: state.multi || {},
+      risks: (state.risks || []).slice(0, 50).map(r => ({
+        etapa: sanitizeTextInput(r.etapa, 300),
+        evento: sanitizeTextInput(r.evento, 300),
+        medida: sanitizeTextInput(r.medida, 500)
+      })),
+      final: state.final || {},
+      signers: (state.signers || []).slice(0, 100).map(s => ({
+        id: sanitizeTextInput(s.id, 50),
+        nombre: sanitizeTextInput(s.nombre, 150),
+        rut: sanitizeHeaderValue(s.rut).slice(0, 20),
+        cargo: sanitizeTextInput(s.cargo, 100),
+        tareas: sanitizeTextInput(s.tareas, 200),
+        firma: s.firma ? String(s.firma) : null,
+        timestamp: s.timestamp ? sanitizeTextInput(s.timestamp, 50) : null
+      })),
+      closingSig: state.closingSig
+        ? {
+            nombre: sanitizeTextInput(state.closingSig.nombre, 150),
+            cargo: sanitizeTextInput(state.closingSig.cargo, 100),
+            firma: state.closingSig.firma ? String(state.closingSig.firma) : null,
+            timestamp: state.closingSig.timestamp ? sanitizeTextInput(state.closingSig.timestamp, 50) : null
+          }
+        : null,
+      destinatario: sanitizeHeaderValue(state.destinatario || 'rgarcia@raycaingenieria.com').slice(0, 150),
+      conCopia: sanitizeHeaderValue(state.conCopia || '').slice(0, 300),
+      updatedAt: Date.now()
+    };
+
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(safeDraft));
   } catch (e) {
-    console.error('Error al guardar borrador en localStorage:', e);
+    console.error('Error al guardar borrador seguro en localStorage:', e);
   }
 }
 
@@ -55,11 +90,30 @@ export function loadDraft(): AppState | null {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    const state: AppState = { ...INITIAL_STATE, ...parsed, sendStatus: 'idle', sendError: null };
-    state.form = { ...state.form, fecha: getTodayISODate() }; // Forzar siempre fecha de hoy
+    if (!parsed || typeof parsed !== 'object') return null;
+
+    // Verificar si el borrador es más antiguo que 24 horas (purga de seguridad)
+    if (parsed.updatedAt && typeof parsed.updatedAt === 'number') {
+      const isExpired = Date.now() - parsed.updatedAt > 24 * 60 * 60 * 1000;
+      if (isExpired) {
+        clearDraft();
+        return null;
+      }
+    }
+
+    const state: AppState = {
+      ...INITIAL_STATE,
+      ...parsed,
+      screen: 'select',
+      sendStatus: 'idle',
+      sendError: null
+    };
+
+    state.form = { ...(state.form || {}), fecha: getTodayISODate() }; // Forzar siempre fecha de hoy
     return state;
   } catch (e) {
-    console.error('Error al cargar borrador:', e);
+    console.error('Error al cargar borrador seguro:', e);
+    clearDraft();
     return null;
   }
 }
