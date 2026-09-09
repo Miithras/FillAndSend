@@ -127,7 +127,7 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                           <option value="">-- Seleccionar de la lista --</option>
                           {WORKERS_DB.map(w => (
                             <option key={w.rut} value={w.nombre}>
-                              {w.nombre} ({w.cargo})
+                              {w.nombre}
                             </option>
                           ))}
                           <option value="__OTHER__">Otro (Ingresar manualmente)...</option>

@@ -16,13 +16,17 @@ export const Header: React.FC<HeaderProps> = ({ state, onOpenHistory, historyCou
   else if (state.screen === 'signers') stepNum = 2;
   else if (state.screen === 'review') stepNum = 3;
 
+  const headerTitle = state.screen === 'select'
+    ? 'Seleccione el documento a emitir'
+    : (currentDoc?.label || 'ART Digital');
+
   return (
     <header className="topbar">
       <div className="brand">
         <div className="brand-title">
-          ART <span>Digital</span>
+          {headerTitle}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <button
             onClick={onOpenHistory}
             style={{
@@ -40,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({ state, onOpenHistory, historyCou
             }}
             title="Ver historial de las últimas 24 horas"
           >
-            📜 24h
+            🕗 24h
             {historyCount > 0 && (
               <span
                 style={{
@@ -66,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({ state, onOpenHistory, historyCou
         </div>
       </div>
 
-      {state.screen !== 'select' ? (
+      {state.screen !== 'select' && (
         <>
           <div className="steps">
             <div className={`step ${stepNum >= 1 ? (stepNum > 1 ? 'done' : 'current') : ''}`} />
@@ -79,8 +83,6 @@ export const Header: React.FC<HeaderProps> = ({ state, onOpenHistory, historyCou
             {stepNum === 3 && 'PASO 3 DE 3 — REVISIÓN Y ENVÍO'}
           </div>
         </>
-      ) : (
-        <div className="brand-sub">SELECCIONA EL DOCUMENTO A EMITIR</div>
       )}
     </header>
   );

@@ -47,7 +47,7 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
       setRut(fRut);
       setRutHint({ text: 'RUT válido', isOk: true, isErr: false });
       if (doc.signerSchema.extra.some(e => e.id === 'cargo')) {
-        setExtraValues(prev => ({ ...prev, cargo: worker.cargo }));
+        setExtraValues(prev => ({ ...prev }));
       }
     }
   };
