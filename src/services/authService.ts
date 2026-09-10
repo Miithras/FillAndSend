@@ -1,187 +1,13 @@
-import seedUsers from '../config/allowedUsers.json';
-import { sendPasswordChangeNotification } from './emailService';
-
-export interface AuthUserRecord {
-  email: string;
-  passwordHash: string;
-  tempPasswordHash: string;
-  must_change_password: boolean;
-  updatedAt?: string;
-}
-
 export interface CurrentUserSession {
   email: string;
   must_change_password: boolean;
   loginAt: string;
 }
 
-const AUTH_USERS_KEY = 'rayca_allowed_users_v1';
 const AUTH_SESSION_KEY = 'rayca_auth_session_v1';
 
 /**
- * Genera hash SHA-256 seguro mediante Web Crypto API nativa
- */
-export async function hashPassword(plain: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(plain);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-/**
- * Inicializa el almacenamiento seguro de usuarios autorizados a partir del seed allowedUsers.json
- */
-export async function initAuth(): Promise<void> {
-  let storedUsers: Record<string, AuthUserRecord> = {};
-  const raw = localStorage.getItem(AUTH_USERS_KEY);
-
-  if (raw) {
-    try {
-      storedUsers = JSON.parse(raw);
-    } catch {
-      storedUsers = {};
-    }
-  }
-
-  let hasChanges = false;
-
-  for (const seed of seedUsers) {
-    const emailKey = seed.email.toLowerCase().trim();
-    if (!storedUsers[emailKey]) {
-      const tempHash = await hashPassword(seed.tempPassword);
-      storedUsers[emailKey] = {
-        email: emailKey,
-        passwordHash: tempHash,
-        tempPasswordHash: tempHash,
-        must_change_password: seed.must_change_password !== false,
-        updatedAt: new Date().toISOString()
-      };
-      hasChanges = true;
-    }
-  }
-
-  if (hasChanges || !raw) {
-    localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(storedUsers));
-  }
-}
-
-/**
- * Obtiene la lista actual de usuarios autorizados desde el storage local
- */
-export function getStoredUsers(): Record<string, AuthUserRecord> {
-  try {
-    const raw = localStorage.getItem(AUTH_USERS_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-/**
- * Valida credenciales contra la lista blanca autorizada
- */
-export async function login(
-  emailInput: string,
-  passwordInput: string
-): Promise<{ success: boolean; user?: CurrentUserSession; error?: string }> {
-  await initAuth();
-
-  const cleanEmail = (emailInput || '').toLowerCase().trim();
-  const cleanPass = (passwordInput || '').trim();
-
-  if (!cleanEmail || !cleanPass) {
-    return { success: false, error: 'Ingresa tu correo institucional y contraseña.' };
-  }
-
-  if (!cleanEmail.endsWith('@raycaingenieria.com')) {
-    return {
-      success: false,
-      error: 'Acceso restringido: Solo se permiten correos corporativos @raycaingenieria.com.'
-    };
-  }
-
-  const users = getStoredUsers();
-  const userRecord = users[cleanEmail];
-
-  if (!userRecord) {
-    return {
-      success: false,
-      error: 'El correo ingresado no se encuentra autorizado en la nómina de la empresa.'
-    };
-  }
-
-  const inputHash = await hashPassword(cleanPass);
-
-  const isPasswordValid =
-    inputHash === userRecord.passwordHash || inputHash === userRecord.tempPasswordHash;
-
-  if (!isPasswordValid) {
-    return {
-      success: false,
-      error: 'Contraseña incorrecta. Verifica e inténtalo nuevamente.'
-    };
-  }
-
-  const session: CurrentUserSession = {
-    email: userRecord.email,
-    must_change_password: userRecord.must_change_password,
-    loginAt: new Date().toISOString()
-  };
-
-  localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
-
-  return { success: true, user: session };
-}
-
-/**
- * Actualiza la contraseña del usuario, desactiva la bandera must_change_password
- * y dispara la notificación por correo electrónico.
- */
-export async function updatePassword(
-  email: string,
-  newPassword: string
-): Promise<{ success: boolean; error?: string }> {
-  const cleanEmail = (email || '').toLowerCase().trim();
-  const cleanPass = (newPassword || '').trim();
-
-  if (cleanPass.length < 6) {
-    return { success: false, error: 'La nueva contraseña debe tener al menos 6 caracteres.' };
-  }
-
-  const users = getStoredUsers();
-  const userRecord = users[cleanEmail];
-
-  if (!userRecord) {
-    return { success: false, error: 'Usuario no encontrado en la base de datos local.' };
-  }
-
-  const newHash = await hashPassword(cleanPass);
-
-  userRecord.passwordHash = newHash;
-  userRecord.must_change_password = false;
-  userRecord.updatedAt = new Date().toISOString();
-
-  users[cleanEmail] = userRecord;
-  localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
-
-  // Actualizar sesión activa
-  const currentSession = getCurrentUser();
-  if (currentSession && currentSession.email === cleanEmail) {
-    currentSession.must_change_password = false;
-    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(currentSession));
-  }
-
-  // Enviar correo transaccional en segundo plano (asíncrono no bloqueante)
-  sendPasswordChangeNotification(cleanEmail).catch(err => {
-    console.warn('Error al enviar correo de notificación:', err);
-  });
-
-  return { success: true };
-}
-
-/**
- * Obtiene la sesión del usuario actualmente autenticado en el dispositivo
+ * Obtiene la sesión en caché local para carga inmediata en cliente
  */
 export function getCurrentUser(): CurrentUserSession | null {
   try {
@@ -189,14 +15,6 @@ export function getCurrentUser(): CurrentUserSession | null {
     if (!raw) return null;
     const session: CurrentUserSession = JSON.parse(raw);
     if (!session || !session.email) return null;
-
-    // Verificar si en los registros locales cambió el estado de must_change_password
-    const users = getStoredUsers();
-    const userRecord = users[session.email.toLowerCase()];
-    if (userRecord) {
-      session.must_change_password = userRecord.must_change_password;
-    }
-
     return session;
   } catch {
     return null;
@@ -204,8 +22,167 @@ export function getCurrentUser(): CurrentUserSession | null {
 }
 
 /**
- * Cierra la sesión activa del usuario
+ * Inicia sesión comunicándose exclusivamente con el backend (/api/auth)
+ * Protegido contra enumeración de usuarios y con cookies HttpOnly/Secure.
  */
-export function logout(): void {
+export async function login(
+  emailInput: string,
+  passwordInput: string
+): Promise<{ success: boolean; user?: CurrentUserSession; error?: string }> {
+  const cleanEmail = (emailInput || '').trim();
+  const cleanPass = (passwordInput || '').trim();
+
+  if (!cleanEmail || !cleanPass) {
+    return { success: false, error: 'Credenciales requeridas.' };
+  }
+
+  try {
+    const resp = await fetch('/api/auth?action=login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        email: cleanEmail,
+        password: cleanPass
+      })
+    });
+
+    const data = await resp.json().catch(() => ({}));
+
+    if (resp.ok && data.success && data.user) {
+      const session: CurrentUserSession = {
+        email: data.user.email,
+        must_change_password: !!data.user.must_change_password,
+        loginAt: new Date().toISOString()
+      };
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+      return { success: true, user: session };
+    }
+
+    // Manejar bloqueo por rate-limiting o credenciales inválidas genéricas
+    if (resp.status === 429) {
+      return {
+        success: false,
+        error: data.error || 'Demasiados intentos fallidos. Intenta más tarde.'
+      };
+    }
+
+    return {
+      success: false,
+      error: data.error || 'Credenciales inválidas'
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: 'Error de conexión con el servidor de autenticación.'
+    };
+  }
+}
+
+/**
+ * Verifica el estado de la sesión activa contra la cookie HttpOnly en backend
+ */
+export async function checkSession(): Promise<CurrentUserSession | null> {
+  try {
+    const resp = await fetch('/api/auth?action=session', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+
+    if (!resp.ok) {
+      localStorage.removeItem(AUTH_SESSION_KEY);
+      return null;
+    }
+
+    const data = await resp.json().catch(() => ({}));
+
+    if (data.authenticated && data.user) {
+      const session: CurrentUserSession = {
+        email: data.user.email,
+        must_change_password: !!data.user.must_change_password,
+        loginAt: new Date().toISOString()
+      };
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+      return session;
+    } else {
+      localStorage.removeItem(AUTH_SESSION_KEY);
+      return null;
+    }
+  } catch {
+    // Si no hay red (PWA offline), conservar la sesión en caché local
+    return getCurrentUser();
+  }
+}
+
+/**
+ * Actualiza la contraseña en el backend seguro y remueve la bandera de cambio obligatorio
+ */
+export async function updatePassword(
+  arg1: string,
+  arg2?: string
+): Promise<{ success: boolean; error?: string }> {
+  // Soporta tanto updatePassword(newPassword) como updatePassword(email, newPassword)
+  const cleanPass = (arg2 ? arg2 : arg1 || '').trim();
+
+  if (cleanPass.length < 6) {
+    return { success: false, error: 'La contraseña debe tener al menos 6 caracteres.' };
+  }
+
+  try {
+    const resp = await fetch('/api/auth?action=change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        newPassword: cleanPass
+      })
+    });
+
+    const data = await resp.json().catch(() => ({}));
+
+    if (resp.ok && data.success) {
+      // Actualizar sesión en caché local
+      const current = getCurrentUser();
+      if (current) {
+        current.must_change_password = false;
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(current));
+      }
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: data.error || 'No se pudo actualizar la contraseña.'
+    };
+  } catch {
+    return {
+      success: false,
+      error: 'Error de conexión al actualizar la contraseña.'
+    };
+  }
+}
+
+/**
+ * Cierra la sesión activa en el backend y limpia el almacenamiento local
+ */
+export async function logout(): Promise<void> {
+  try {
+    await fetch('/api/auth?action=logout', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+  } catch {}
   localStorage.removeItem(AUTH_SESSION_KEY);
 }

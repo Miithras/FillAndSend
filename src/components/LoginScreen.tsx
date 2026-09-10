@@ -17,35 +17,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onShow
     e.preventDefault();
     setErrorMessage(null);
 
-    let cleanEmail = email.trim();
-    if (!cleanEmail) {
-      setErrorMessage('Por favor, ingresa tu correo institucional.');
-      return;
-    }
+    const cleanEmail = email.trim();
+    const cleanPass = password.trim();
 
-    // Si el usuario escribió solo su usuario sin dominio, autocompletar @raycaingenieria.com
-    if (!cleanEmail.includes('@')) {
-      cleanEmail = `${cleanEmail}@raycaingenieria.com`;
-      setEmail(cleanEmail);
-    }
-
-    if (!password) {
-      setErrorMessage('Por favor, ingresa tu contraseña.');
+    if (!cleanEmail || !cleanPass) {
+      setErrorMessage('Credenciales inválidas');
       return;
     }
 
     setLoading(true);
 
     try {
-      const result = await login(cleanEmail, password);
+      const result = await login(cleanEmail, cleanPass);
       if (result.success && result.user) {
-        onShowToast(`¡Bienvenido a ART Digital!`);
+        onShowToast('¡Bienvenido a ART Digital!');
         onLoginSuccess(result.user);
       } else {
-        setErrorMessage(result.error || 'Credenciales inválidas.');
+        setErrorMessage(result.error || 'Credenciales inválidas');
       }
-    } catch (err: any) {
-      setErrorMessage(err?.message || 'Error al validar credenciales.');
+    } catch {
+      setErrorMessage('Error de conexión con el servicio de autenticación.');
     } finally {
       setLoading(false);
     }
@@ -74,41 +65,40 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onShow
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="field">
-            <label htmlFor="login-email">Correo institucional</label>
-            <div className="login-input-group">
+            <label htmlFor="login-email">Correo electrónico</label>
+            <div className="login-input-wrap">
               <input
                 id="login-email"
+                className="login-input"
                 type="email"
                 value={email}
                 onChange={e => {
                   setEmail(e.target.value);
                   setErrorMessage(null);
                 }}
-                placeholder="usuario@raycaingenieria.com"
-                autoComplete="email"
+                placeholder="correo@ejemplo.com"
+                autoComplete="username"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck="false"
                 required
               />
             </div>
-            <div className="hint" style={{ color: 'var(--slate)' }}>
-              Solo dominios <b>@raycaingenieria.com</b>
-            </div>
           </div>
 
           <div className="field">
             <label htmlFor="login-password">Contraseña</label>
-            <div className="login-password-wrap">
+            <div className="login-input-wrap">
               <input
                 id="login-password"
+                className="login-input login-input-password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => {
                   setPassword(e.target.value);
                   setErrorMessage(null);
                 }}
-                placeholder="Ingresa tu contraseña"
+                placeholder="Tu contraseña"
                 autoComplete="current-password"
                 required
               />
@@ -117,12 +107,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onShow
                 className="login-toggle-pw"
                 onClick={() => setShowPassword(prev => !prev)}
                 title={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
               >
                 {showPassword ? '🙈' : '👁️'}
               </button>
             </div>
             <div className="hint" style={{ color: 'var(--slate)' }}>
-              Si es tu primer ingreso, utiliza la clave temporal asignada.
+              Ingresa tu contraseña de acceso autorizada.
             </div>
           </div>
 
@@ -137,7 +128,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onShow
         </form>
 
         <div className="login-footer">
-          🔒 Conexión segura y cifrada · Datos protegidos localmente
+          🔒 Conexión segura y cifrada · Datos protegidos
         </div>
       </div>
     </div>

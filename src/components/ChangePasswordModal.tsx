@@ -34,11 +34,6 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
       return;
     }
 
-    if (cleanPass === 'Rayca2026*' || cleanPass.toLowerCase() === 'rayca2026*') {
-      setErrorMessage('Debes elegir una contraseña distinta a la clave temporal predeterminada.');
-      return;
-    }
-
     if (cleanPass !== cleanConfirm) {
       setErrorMessage('Las contraseñas ingresadas no coinciden.');
       return;

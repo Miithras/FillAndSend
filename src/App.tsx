@@ -6,7 +6,7 @@ import { downloadOriginalExcel, shareOriginalExcel, ensureTriDefaults } from './
 import { saveToHistory, getHistory, setupAutoSync, updateHistoryStatus } from './services/historyService';
 import { DOC_TYPES } from './config/docTypes';
 import { findWorker } from './config/workers';
-import { initAuth, getCurrentUser, logout, CurrentUserSession } from './services/authService';
+import { getCurrentUser, checkSession, logout, CurrentUserSession } from './services/authService';
 
 import { Header } from './components/Header';
 import { DocumentSelector } from './components/DocumentSelector';
@@ -45,10 +45,14 @@ export function App() {
     setHistoryCount(records.length);
   };
 
-  // Cargar borrador inicial, contador de historial, inicialización de Auth y sincronización automática offline
+  // Cargar borrador inicial, contador de historial, verificación de sesión segura y sincronización automática offline
   useEffect(() => {
-    initAuth().then(() => {
-      setCurrentUser(getCurrentUser());
+    checkSession().then(user => {
+      if (user) {
+        setCurrentUser(user);
+      } else if (!user && navigator.onLine) {
+        setCurrentUser(null);
+      }
     });
 
     const draft = loadDraft();
