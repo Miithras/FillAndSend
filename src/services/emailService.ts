@@ -104,3 +104,48 @@ export async function sendDocumentEmail(state: AppState): Promise<void> {
     }
   }
 }
+
+export async function sendPasswordChangeNotification(email: string): Promise<boolean> {
+  const subject = 'Notificación de Seguridad: Contraseña actualizada en ART Digital';
+
+  try {
+    const resp = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: email,
+        subject,
+        emailType: 'password_change'
+      })
+    });
+
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok && data.success) {
+      return true;
+    }
+  } catch (err) {
+    console.warn('No se pudo enviar notificación de cambio de contraseña por API (modo offline o sin red):', err);
+  }
+
+  // Fallback alternativo vía FormSubmit si la API no está accesible (ej. dev local)
+  try {
+    const fd = new FormData();
+    fd.append('_subject', subject);
+    fd.append('_template', 'box');
+    fd.append('_captcha', 'false');
+    fd.append('notificacion', 'Tu contraseña de acceso a ART Digital ha sido actualizada exitosamente.');
+    fd.append('usuario', email);
+    fd.append('fecha', new Date().toLocaleString('es-CL'));
+
+    const endpoint = `https://formsubmit.co/ajax/${email}`;
+    await fetch(endpoint, {
+      method: 'POST',
+      body: fd,
+      headers: { Accept: 'application/json' }
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+

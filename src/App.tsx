@@ -6,6 +6,7 @@ import { downloadOriginalExcel, shareOriginalExcel, ensureTriDefaults } from './
 import { saveToHistory, getHistory, setupAutoSync, updateHistoryStatus } from './services/historyService';
 import { DOC_TYPES } from './config/docTypes';
 import { findWorker } from './config/workers';
+import { initAuth, getCurrentUser, logout, CurrentUserSession } from './services/authService';
 
 import { Header } from './components/Header';
 import { DocumentSelector } from './components/DocumentSelector';
@@ -17,8 +18,13 @@ import { ClosingFormModal } from './components/ClosingFormModal';
 import { ConfirmModal } from './components/ConfirmModal';
 import { HistoryModal } from './components/HistoryModal';
 import { Toast } from './components/Toast';
+import { LoginScreen } from './components/LoginScreen';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
 
 export function App() {
+  const [currentUser, setCurrentUser] = useState<CurrentUserSession | null>(() => getCurrentUser());
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+
   const [state, setState] = useState<AppState>(INITIAL_STATE);
   const [hasDraft, setHasDraft] = useState(false);
   const [toastMsg, setToastMsg] = useState<{ msg: string; isErr?: boolean } | null>(null);
@@ -39,8 +45,12 @@ export function App() {
     setHistoryCount(records.length);
   };
 
-  // Cargar borrador inicial, contador de historial y sincronización automática offline
+  // Cargar borrador inicial, contador de historial, inicialización de Auth y sincronización automática offline
   useEffect(() => {
+    initAuth().then(() => {
+      setCurrentUser(getCurrentUser());
+    });
+
     const draft = loadDraft();
     if (draft && draft.screen !== 'select') {
       setHasDraft(true);
@@ -300,12 +310,59 @@ export function App() {
     }
   };
 
+  const handleLogout = () => {
+    setConfirmConfig({
+      msg: '¿Estás seguro de que deseas cerrar sesión en este dispositivo?',
+      onConfirm: () => {
+        logout();
+        setCurrentUser(null);
+        setConfirmConfig(null);
+        showToast('Sesión cerrada.');
+      }
+    });
+  };
+
+  // Auth Guard: Si no hay usuario autenticado, bloquear acceso público
+  if (!currentUser) {
+    return (
+      <div id="app">
+        <LoginScreen
+          onLoginSuccess={user => {
+            setCurrentUser(user);
+          }}
+          onShowToast={showToast}
+        />
+        {toastMsg && <Toast message={toastMsg.msg} isErr={toastMsg.isErr} />}
+      </div>
+    );
+  }
+
+  // Auth Guard: Si la contraseña es temporal (must_change_password = true), forzar actualización
+  if (currentUser.must_change_password) {
+    return (
+      <div id="app">
+        <ChangePasswordModal
+          email={currentUser.email}
+          isMandatory={true}
+          onSuccess={() => {
+            setCurrentUser(prev => (prev ? { ...prev, must_change_password: false } : null));
+          }}
+          onShowToast={showToast}
+        />
+        {toastMsg && <Toast message={toastMsg.msg} isErr={toastMsg.isErr} />}
+      </div>
+    );
+  }
+
   return (
     <div id="app">
       <Header
         state={state}
         onOpenHistory={() => setShowHistoryModal(true)}
         historyCount={historyCount}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        onChangePassword={() => setShowChangePasswordModal(true)}
       />
 
       <main className="app-content">
@@ -414,6 +471,17 @@ export function App() {
           message={confirmConfig.msg}
           onConfirm={confirmConfig.onConfirm}
           onCancel={() => setConfirmConfig(null)}
+        />
+      )}
+
+      {/* MODAL CAMBIO DE CONTRASEÑA VOLUNTARIO */}
+      {showChangePasswordModal && currentUser && (
+        <ChangePasswordModal
+          email={currentUser.email}
+          isMandatory={false}
+          onSuccess={() => setShowChangePasswordModal(false)}
+          onClose={() => setShowChangePasswordModal(false)}
+          onShowToast={showToast}
         />
       )}
 
