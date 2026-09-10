@@ -569,17 +569,27 @@ header.topbar {
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s, transform 0.1s;
+  user-select: none;
+}
+
+.signer-card:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 4px 14px rgba(0, 30, 89, 0.06);
+}
+
+.signer-card:active {
+  transform: scale(0.99);
 }
 
 .signer-card.signed {
   border-color: var(--cyan);
-  background: rgba(0, 160, 184, 0.03);
+  background: rgba(0, 160, 184, 0.04);
 }
 
 .signer-avatar {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: var(--bg-2);
   display: flex;
@@ -589,6 +599,7 @@ header.topbar {
   flex-shrink: 0;
   border: 1px solid var(--line);
   color: var(--navy);
+  transition: background 0.2s, color 0.2s;
 }
 
 .signer-card.signed .signer-avatar {
@@ -606,32 +617,62 @@ header.topbar {
   font-weight: 700;
   font-size: 14.5px;
   color: var(--navy);
+  line-height: 1.25;
 }
 
 .signer-info .rut {
   font-size: 12px;
   color: var(--slate);
   font-family: 'JetBrains Mono', monospace;
+  margin-top: 1px;
 }
 
 .signer-info .role {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--slate);
+  margin-top: 1px;
 }
 
-.signer-status {
+.signer-helper {
   font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.signer-status.pending {
-  color: var(--slate);
-}
-
-.signer-status.done {
   color: var(--cyan);
+  margin-top: 4px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.2;
+}
+
+.signer-helper.signed {
+  color: var(--slate);
+  font-weight: 500;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 4px 9px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-badge.badge-done {
+  background: rgba(0, 160, 184, 0.12);
+  color: var(--cyan);
+  border: 1px solid rgba(0, 160, 184, 0.3);
+}
+
+.status-badge.badge-pending {
+  background: rgba(86, 101, 159, 0.1);
+  color: var(--slate);
+  border: 1px solid rgba(86, 101, 159, 0.2);
 }
 
 .signer-del {
@@ -640,7 +681,15 @@ header.topbar {
   color: var(--slate);
   font-size: 18px;
   cursor: pointer;
-  padding: 4px 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: color 0.15s, background-color 0.15s;
+  flex-shrink: 0;
+}
+
+.signer-del:hover {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.08);
 }
 
 /* MEDIDOR GAUGE */

@@ -4,6 +4,8 @@ import { INITIAL_STATE, saveDraft, loadDraft, clearDraft } from './services/stor
 import { sendDocumentEmail } from './services/emailService';
 import { downloadOriginalExcel, shareOriginalExcel, ensureTriDefaults } from './services/excelService';
 import { saveToHistory, getHistory, setupAutoSync, updateHistoryStatus } from './services/historyService';
+import { DOC_TYPES } from './config/docTypes';
+import { findWorker } from './config/workers';
 
 import { Header } from './components/Header';
 import { DocumentSelector } from './components/DocumentSelector';
@@ -202,13 +204,34 @@ export function App() {
     showToast('Firma guardada ✓');
   };
 
+  const handleOpenClosingModal = () => {
+    const doc = DOC_TYPES[state.docType];
+    const presenterName = (state.form.instructor || state.form.supervisor || '').trim();
+    if (!presenterName) {
+      showToast('⚠️ Debes ingresar primero al instructor/supervisor en el Paso 1 (Datos Generales)', true);
+      return;
+    }
+
+    const worker = findWorker(presenterName);
+    const initialRole = state.closingSig?.cargo || (worker?.cargo || (state.docType === 'charla_inicial' ? '' : 'Supervisor'));
+
+    if (!doc.closing.roleField) {
+      setClosingDraftInfo({ name: presenterName, roleVal: '' });
+      setShowClosingCanvasModal(true);
+    } else {
+      setClosingDraftInfo({ name: presenterName, roleVal: initialRole });
+      setShowClosingModal(true);
+    }
+  };
+
   const handleSaveClosingSignature = (dataUrl: string) => {
-    if (!closingDraftInfo) return;
+    const presenterName = (state.form.instructor || state.form.supervisor || '').trim();
+    const finalName = presenterName || (closingDraftInfo?.name || 'Supervisor');
     setState(prev => ({
       ...prev,
       closingSig: {
-        nombre: closingDraftInfo.name,
-        cargo: closingDraftInfo.roleVal,
+        nombre: finalName,
+        cargo: closingDraftInfo?.roleVal || '',
         firma: dataUrl,
         timestamp: new Date().toLocaleString('es-CL')
       }
@@ -318,7 +341,7 @@ export function App() {
             onDeleteSigner={handleDeleteSigner}
             onClearAllSigners={handleClearAllSigners}
             onOpenSignModal={idx => setActiveSignerIndex(idx)}
-            onOpenClosingModal={() => setShowClosingModal(true)}
+            onOpenClosingModal={handleOpenClosingModal}
             onBackToForm={() => setState(prev => ({ ...prev, screen: 'form' }))}
             onGoToReview={() => setState(prev => ({ ...prev, screen: 'review' }))}
             onShowToast={showToast}

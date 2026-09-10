@@ -34,6 +34,17 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
   const circumference = 2 * Math.PI * 65;
   const offset = circumference * (1 - pct);
 
+  const presenterName = (state.form.instructor || state.form.supervisor || '').trim();
+  const workerInfo = findWorker(presenterName);
+
+  const handleOpenClosing = () => {
+    if (!presenterName) {
+      onShowToast('⚠️ Debes ingresar primero al instructor/supervisor en el Paso 1 (Datos Generales)', true);
+      return;
+    }
+    onOpenClosingModal();
+  };
+
   const [name, setName] = useState('');
   const [rut, setRut] = useState('');
   const [rutHint, setRutHint] = useState({ text: 'Formato: 12.345.678-9', isOk: false, isErr: false });
@@ -163,6 +174,15 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
                 key={s.id || i}
                 className={`signer-card ${signed ? 'signed' : ''}`}
                 onClick={() => onOpenSignModal(i)}
+                title={signed ? 'Toca para editar firma' : 'Toca para firmar en pantalla'}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onOpenSignModal(i);
+                  }
+                }}
               >
                 <div className="signer-avatar">{signed ? '✓' : '👤'}</div>
                 <div className="signer-info">
@@ -171,26 +191,20 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
                     <div className="rut">{s.rut ? formatearRut(s.rut) : 'RUT pendiente'}</div>
                   )}
                   {roleLine && <div className="role">{roleLine}</div>}
+                  <div className={`signer-helper ${signed ? 'signed' : ''}`}>
+                    {signed ? (
+                      <span>✓ Firma registrada {s.timestamp ? `(${s.timestamp})` : ''} · Toca para modificar</span>
+                    ) : (
+                      <span>👉 Toca para firmar en pantalla</span>
+                    )}
+                  </div>
                 </div>
-                <div className={`signer-status ${signed ? 'done' : 'pending'}`}>
-                  {signed ? 'Firmado' : 'Pendiente'}
+                <div className={`status-badge ${signed ? 'badge-done' : 'badge-pending'}`}>
+                  {signed ? '✓ Firmado' : '⏳ Pendiente'}
                 </div>
-                {signed && (
-                  <button
-                    className="signer-del"
-                    title="Editar firma"
-                    style={{ color: 'var(--yellow)' }}
-                    onClick={e => {
-                      e.stopPropagation();
-                      onOpenSignModal(i);
-                    }}
-                  >
-                    ✎
-                  </button>
-                )}
                 <button
                   className="signer-del"
-                  title="Eliminar"
+                  title="Eliminar integrante"
                   onClick={e => {
                     e.stopPropagation();
                     onDeleteSigner(i);
@@ -266,30 +280,61 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
         + Agregar a la lista
       </button>
 
-      {/* FIRMA DE CIERRE DEL SUPERVISOR */}
+      {/* FIRMA DE CIERRE DEL SUPERVISOR / INSTRUCTOR */}
       {doc.closing && doc.closing.enabled && (
         <>
           <div
             className="section-title"
-            style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 16, textTransform: 'uppercase', margin: '22px 0 10px' }}
+            style={{
+              fontFamily: "'Barlow Condensed', sans-serif",
+              fontWeight: 700,
+              fontSize: 16,
+              textTransform: 'uppercase',
+              margin: '22px 0 10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
           >
-            {doc.closing.title}
+            <span>{doc.closing.title}</span>
+            <span style={{ fontSize: 11, color: 'var(--slate)', fontFamily: "'JetBrains Mono', monospace", textTransform: 'none', fontWeight: 600 }}>
+              🔒 Auto-asignado
+            </span>
           </div>
           <div
             className={`signer-card ${state.closingSig && state.closingSig.firma ? 'signed' : ''}`}
-            onClick={onOpenClosingModal}
+            onClick={handleOpenClosing}
+            title={presenterName ? 'Toca para firmar' : 'Debes asignar al instructor/supervisor en el Paso 1'}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleOpenClosing();
+              }
+            }}
           >
             <div className="signer-avatar">{state.closingSig && state.closingSig.firma ? '✓' : '✍️'}</div>
             <div className="signer-info">
               <div className="name">
-                {state.closingSig ? state.closingSig.nombre : 'Toca para registrar firma de cierre'}
+                {presenterName || <span style={{ color: 'var(--danger)', fontWeight: 600 }}>Sin asignar en Paso 1</span>}
               </div>
-              {doc.closing.roleField && state.closingSig && (
-                <div className="role">{state.closingSig[doc.closing.roleField.id] || ''}</div>
-              )}
+              <div className="role" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                <span style={{ fontSize: 10, background: 'var(--bg-2)', border: '1px solid var(--line)', padding: '1px 6px', borderRadius: '6px' }}>
+                  🔒 {state.docType === 'charla_inicial' ? 'Instructor' : 'Supervisor'} (Solo lectura)
+                </span>
+                {doc.closing.roleField && (state.closingSig?.[doc.closing.roleField.id] || workerInfo?.cargo) && (
+                  <span>· {state.closingSig?.[doc.closing.roleField.id] || workerInfo?.cargo}</span>
+                )}
+              </div>
+              <div className={`signer-helper ${state.closingSig && state.closingSig.firma ? 'signed' : ''}`}>
+                {state.closingSig && state.closingSig.firma
+                  ? `✓ Firma registrada (${state.closingSig.timestamp || 'Guardada'}) · Toca para modificar`
+                  : (presenterName ? '👉 Toca para registrar firma en pantalla' : '⚠️ Completa el nombre en Datos Generales')}
+              </div>
             </div>
-            <div className={`signer-status ${state.closingSig && state.closingSig.firma ? 'done' : 'pending'}`}>
-              {state.closingSig && state.closingSig.firma ? 'Firmado' : 'Pendiente'}
+            <div className={`status-badge ${state.closingSig && state.closingSig.firma ? 'badge-done' : 'badge-pending'}`}>
+              {state.closingSig && state.closingSig.firma ? '✓ Firmado' : '⏳ Pendiente'}
             </div>
           </div>
         </>

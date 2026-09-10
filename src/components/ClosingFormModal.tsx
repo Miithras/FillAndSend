@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppState } from '../types';
 import { DOC_TYPES } from '../config/docTypes';
+import { findWorker } from '../config/workers';
 
 interface ClosingFormModalProps {
   state: AppState;
@@ -11,34 +12,41 @@ interface ClosingFormModalProps {
 
 export const ClosingFormModal: React.FC<ClosingFormModalProps> = ({ state, onNext, onClose, onShowToast }) => {
   const doc = DOC_TYPES[state.docType];
-  const [name, setName] = useState(state.closingSig?.nombre || '');
-  const [roleVal, setRoleVal] = useState(
-    doc.closing.roleField ? state.closingSig?.[doc.closing.roleField.id] || '' : ''
-  );
+  const presenterName = (state.form.instructor || state.form.supervisor || '').trim();
+  const worker = findWorker(presenterName);
+  const defaultRole = state.closingSig?.cargo || (doc.closing.roleField ? state.closingSig?.[doc.closing.roleField.id] : '') || worker?.cargo || 'Supervisor';
+  const [roleVal, setRoleVal] = useState(defaultRole);
 
   const handleNext = () => {
-    const trimmedName = name.trim();
-    if (!trimmedName) {
-      onShowToast('Completa el nombre', true);
+    if (!presenterName) {
+      onShowToast('⚠️ Debes ingresar primero al instructor/supervisor en el Paso 1 (Datos Generales)', true);
       return;
     }
-    onNext(trimmedName, roleVal.trim());
+    onNext(presenterName, roleVal.trim());
   };
 
   return (
     <div className="modal-overlay">
       <div className="modal">
         <h3>{doc.closing.title}</h3>
-        <p className="sub">Completa los datos antes de firmar.</p>
+        <p className="sub">Confirma los datos del presentador antes de firmar.</p>
 
         <div className="field">
-          <label>Nombre</label>
+          <label>Nombre del {state.docType === 'charla_inicial' ? 'Instructor' : 'Supervisor'} (Auto-asignado 🔒)</label>
           <input
             type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="Nombre completo"
+            value={presenterName || '(Sin asignar en Paso 1)'}
+            readOnly
+            style={{
+              background: 'var(--bg-2)',
+              cursor: 'not-allowed',
+              color: presenterName ? 'var(--navy)' : 'var(--danger)',
+              fontWeight: 700
+            }}
           />
+          <div className="hint" style={{ color: 'var(--cyan)' }}>
+            🔒 Bloqueado: coincide exactamente con los datos generales del inicio.
+          </div>
         </div>
 
         {doc.closing.roleField && (
@@ -53,7 +61,7 @@ export const ClosingFormModal: React.FC<ClosingFormModalProps> = ({ state, onNex
           </div>
         )}
 
-        <button className="btn-primary" onClick={handleNext}>
+        <button className="btn-primary" onClick={handleNext} disabled={!presenterName}>
           Continuar a firmar
         </button>
         <button

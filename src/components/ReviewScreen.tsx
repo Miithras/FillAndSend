@@ -24,8 +24,9 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
   onDownloadExcel
 }) => {
   const doc = DOC_TYPES[state.docType];
+  const presenterName = (state.form.instructor || state.form.supervisor || '').trim();
   const allSigned = state.signers.length > 0 && state.signers.every(s => s.firma);
-  const closingOk = !doc.closing || !doc.closing.enabled || (state.closingSig && state.closingSig.firma);
+  const closingOk = !doc.closing || !doc.closing.enabled || (Boolean(presenterName) && Boolean(state.closingSig && state.closingSig.firma));
   const ready = allSigned && closingOk;
 
   return (
@@ -119,7 +120,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
           <h4>{doc.closing.title}</h4>
           <div className="review-row">
             <span className="k">Nombre</span>
-            <span className="v">{state.closingSig.nombre}</span>
+            <span className="v">{presenterName || state.closingSig.nombre} (Auto-asignado 🔒)</span>
           </div>
           {doc.closing.roleField && (
             <div className="review-row">
