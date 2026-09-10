@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { AppState, Signer } from '../types';
+import { AppState, Signer, Worker } from '../types';
 import { DOC_TYPES } from '../config/docTypes';
 import { WORKERS_DB, findWorker } from '../config/workers';
 import { formatearRut, validarRut, uid } from '../utils/rut';
+import { WorkerCombobox } from './WorkerCombobox';
 
 interface SignersScreenProps {
   state: AppState;
@@ -50,16 +51,21 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
   const [rutHint, setRutHint] = useState({ text: 'Formato: 12.345.678-9', isOk: false, isErr: false });
   const [extraValues, setExtraValues] = useState<Record<string, string>>({});
 
+  const handleSelectWorker = (worker: Worker) => {
+    setName(worker.nombre);
+    const fRut = formatearRut(worker.rut);
+    setRut(fRut);
+    setRutHint({ text: 'RUT válido', isOk: true, isErr: false });
+    if (doc.signerSchema.extra.some(e => e.id === 'cargo')) {
+      setExtraValues(prev => ({ ...prev, cargo: worker.cargo }));
+    }
+  };
+
   const handleNameChange = (val: string) => {
     setName(val);
     const worker = findWorker(val);
     if (worker) {
-      const fRut = formatearRut(worker.rut);
-      setRut(fRut);
-      setRutHint({ text: 'RUT válido', isOk: true, isErr: false });
-      if (doc.signerSchema.extra.some(e => e.id === 'cargo')) {
-        setExtraValues(prev => ({ ...prev }));
-      }
+      handleSelectWorker(worker);
     }
   };
 
@@ -229,19 +235,16 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
       {/* FORMULARIO AGREGAR INTEGRANTE */}
       <div className="field" style={{ marginTop: 14 }}>
         <label>Agregar integrante — nombre</label>
-        <input
-          type="text"
+        <WorkerCombobox
           value={name}
-          onChange={e => handleNameChange(e.target.value)}
-          placeholder="Escribe o elige de la lista"
-          list="workersDatalist"
+          onChangeName={handleNameChange}
+          onSelectWorker={handleSelectWorker}
+          existingSignerNames={state.signers.map(s => s.nombre)}
+          placeholder="Escribe para buscar o ingresar nuevo..."
         />
-        <datalist id="workersDatalist">
-          {WORKERS_DB.map(w => (
-            <option key={w.rut} value={w.nombre} />
-          ))}
-        </datalist>
-        <div className="hint">Si eliges a alguien de la lista, RUT y cargo se autocompletan.</div>
+        <div className="hint">
+          Selecciona de la nómina (autocompleta RUT y cargo) o escribe para ingresar uno nuevo.
+        </div>
       </div>
 
       {doc.signerSchema.rutRequired && (
