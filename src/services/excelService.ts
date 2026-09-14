@@ -5,16 +5,102 @@ import { ART_CELLS, CHARLA_CELLS, colToIndex } from '../config/excelMappings';
 import { formatearRut } from '../utils/rut';
 import { getTodayISODate, formatDateChilean } from './storageService';
 
-async function addSignatureImage(workbook: ExcelJS.Workbook, ws: ExcelJS.Worksheet, dataUrl: string | null, colLetter: string, row: number) {
+/**
+ * Normaliza nombres para comparación flexible (insensible a mayúsculas, tildes y espacios)
+ */
+function normalizeName(str: string | null | undefined): string {
+  return (str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+/**
+ * Inserta filas de forma segura en ExcelJS preservando combinaciones existentes,
+ * alturas de fila originales y estilos (bordes, fuentes, alineación y fondo).
+ */
+function safeInsertRows(
+  ws: ExcelJS.Worksheet,
+  startRow: number,
+  count: number,
+  templateRowIndex?: number
+): void {
+  if (count <= 0) return;
+
+  // 1. Capturar snapshot de todas las combinaciones existentes
+  const mergeRanges = Object.values((ws as any)._merges || {}).map((range: any) => ({
+    top: range.top as number,
+    bottom: range.bottom as number,
+    left: range.left as number,
+    right: range.right as number
+  }));
+
+  // 2. Descombinar todo para evitar colisiones internas en ExcelJS
+  for (const range of mergeRanges) {
+    try {
+      ws.unMergeCells(range.top, range.left, range.bottom, range.right);
+    } catch {}
+  }
+
+  // 3. Insertar las filas vacías
+  const emptyRows = Array.from({ length: count }, () => []);
+  ws.spliceRows(startRow, 0, ...emptyRows);
+
+  // 4. Desplazar combinaciones que estén en o debajo del punto de inserción y recombinar
+  for (const range of mergeRanges) {
+    let top = range.top;
+    let bottom = range.bottom;
+    if (top >= startRow) {
+      top += count;
+      bottom += count;
+    } else if (bottom >= startRow) {
+      bottom += count;
+    }
+    try {
+      ws.mergeCells(top, range.left, bottom, range.right);
+    } catch {}
+  }
+
+  // 5. Clonar formato y altura desde la fila de referencia
+  if (templateRowIndex) {
+    const actualTmplIdx = templateRowIndex < startRow ? templateRowIndex : templateRowIndex + count;
+    const tmplRow = ws.getRow(actualTmplIdx);
+    for (let i = 0; i < count; i++) {
+      const tgtRow = ws.getRow(startRow + i);
+      tgtRow.height = tmplRow.height;
+      for (let c = 1; c <= 8; c++) {
+        const srcCell = tmplRow.getCell(c);
+        const tgtCell = tgtRow.getCell(c);
+        if (srcCell.style) {
+          tgtCell.style = JSON.parse(JSON.stringify(srcCell.style));
+        }
+      }
+    }
+  }
+}
+
+async function addSignatureImage(
+  workbook: ExcelJS.Workbook,
+  ws: ExcelJS.Worksheet,
+  dataUrl: string | null,
+  colLetter: string,
+  row: number
+) {
   if (!dataUrl) return;
   const imgId = workbook.addImage({ base64: dataUrl, extension: 'png' });
   ws.addImage(imgId, {
-    tl: { col: colToIndex(colLetter), row: row - 1 },
-    ext: { width: 90, height: 32 }
+    tl: { col: colToIndex(colLetter) + 0.05, row: row - 1 + 0.05 },
+    ext: { width: 85, height: 26 }
   } as any);
 }
 
-async function addSignatureImageFit(workbook: ExcelJS.Workbook, ws: ExcelJS.Worksheet, dataUrl: string | null, rangeAddr: string) {
+async function addSignatureImageFit(
+  workbook: ExcelJS.Workbook,
+  ws: ExcelJS.Worksheet,
+  dataUrl: string | null,
+  rangeAddr: string
+) {
   if (!dataUrl) return;
   const [tlAddr, brAddr] = rangeAddr.split(':');
   const tlCol = tlAddr.match(/[A-Z]+/)?.[0] || 'A';
@@ -24,8 +110,8 @@ async function addSignatureImageFit(workbook: ExcelJS.Workbook, ws: ExcelJS.Work
 
   const imgId = workbook.addImage({ base64: dataUrl, extension: 'png' });
   ws.addImage(imgId, {
-    tl: { col: colToIndex(tlCol), row: tlRow - 1 },
-    br: { col: colToIndex(brCol) + 1, row: brRow }
+    tl: { col: colToIndex(tlCol) + 0.05, row: tlRow - 1 + 0.05 },
+    br: { col: colToIndex(brCol) + 0.95, row: brRow - 0.05 }
   } as any);
 }
 
@@ -34,22 +120,6 @@ function writeLeftCell(ws: ExcelJS.Worksheet, addr: string, value: any) {
   const cell = ws.getCell(addr);
   cell.value = value;
   cell.alignment = { ...cell.alignment, horizontal: 'left', vertical: 'middle', wrapText: true };
-}
-
-function writeTriCell(ws: ExcelJS.Worksheet, addr: string, val?: string | null) {
-  const cell = ws.getCell(addr);
-  const cleanVal = val || 'NA'; // Requisito 8: por defecto N/A si no está seleccionado
-
-  if (cleanVal === 'SI') {
-    cell.value = 'SI';
-    cell.alignment = { ...cell.alignment, horizontal: 'left', vertical: 'middle' };
-  } else if (cleanVal === 'NO') {
-    cell.value = 'NO';
-    cell.alignment = { ...cell.alignment, horizontal: 'center', vertical: 'middle' };
-  } else {
-    cell.value = 'N/A';
-    cell.alignment = { ...cell.alignment, horizontal: 'right', vertical: 'middle' };
-  }
 }
 
 function writeCenterCell(ws: ExcelJS.Worksheet, addr: string, value: any) {
@@ -64,6 +134,10 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
   const f = state.form;
   const C = ART_CELLS;
 
+  // Preservar anchos de columna originales de la plantilla
+  const originalColWidths = ws.columns.map(c => c.width);
+
+  // Encabezados
   Object.entries(C.header).forEach(([id, addr]) => {
     if (id === 'fecha') {
       const fechaVal = formatDateChilean(f.fecha || getTodayISODate());
@@ -93,6 +167,7 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     else ws.getCell('G' + row).value = 'X';
   });
 
+  // II. EPP
   Object.entries(C.epp).forEach(([item, [row, col]]) => {
     if (state.multi['0:' + item]) {
       ws.getCell(col + row).value = 'X';
@@ -102,6 +177,7 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     }
   });
 
+  // V. Actividades de Alto Riesgo
   Object.entries(C.altoRiesgo).forEach(([item, [row, col]]) => {
     if (state.multi['3:' + item]) {
       ws.getCell(col + row).value = 'X';
@@ -112,6 +188,7 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     }
   });
 
+  // IV. Aspectos Ambientales
   Object.entries(C.aspectos).forEach(([item, row]) => {
     if (state.multi['2:' + item]) {
       ws.getCell('C' + row).value = 'X';
@@ -121,52 +198,67 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     }
   });
 
-  // VI. Análisis de Riesgos en el Trabajo (dinámico)
+  // VI. Análisis de Riesgos en el Trabajo (dinámico con safeInsertRows)
   let insertedRiskRowsCount = 0;
   if (state.risks && state.risks.length > 0) {
-    state.risks.forEach((r, idx) => {
-      const row = 75 + idx;
-      if (idx > 0) {
-        ws.spliceRows(row, 0, []);
-        insertedRiskRowsCount++;
-        try {
-          ws.mergeCells(`A${row}:B${row}`);
-          ws.mergeCells(`C${row}:E${row}`);
-          ws.mergeCells(`F${row}:H${row}`);
-        } catch (e) {}
+    if (state.risks[0].etapa) writeLeftCell(ws, 'A75', state.risks[0].etapa);
+    if (state.risks[0].evento) writeLeftCell(ws, 'C75', state.risks[0].evento);
+    if (state.risks[0].medida) writeLeftCell(ws, 'F75', state.risks[0].medida);
+
+    if (state.risks.length > 1) {
+      const extraRisks = state.risks.length - 1;
+      safeInsertRows(ws, 76, extraRisks, 75);
+      for (let i = 0; i < extraRisks; i++) {
+        const row = 76 + i;
+        ws.mergeCells(`A${row}:B${row}`);
+        ws.mergeCells(`C${row}:E${row}`);
+        ws.mergeCells(`F${row}:H${row}`);
+
+        const r = state.risks[i + 1];
+        if (r.etapa) writeLeftCell(ws, 'A' + row, r.etapa);
+        if (r.evento) writeLeftCell(ws, 'C' + row, r.evento);
+        if (r.medida) writeLeftCell(ws, 'F' + row, r.medida);
       }
-      if (r.etapa) writeLeftCell(ws, 'A' + row, r.etapa);
-      if (r.evento) writeLeftCell(ws, 'C' + row, r.evento);
-      if (r.medida) writeLeftCell(ws, 'F' + row, r.medida);
-    });
+      insertedRiskRowsCount = extraRisks;
+    }
   }
 
-  // Operarios roster (dinámico)
+  // VII. Operarios en terreno presentes (dinámico con safeInsertRows)
   const operariosBaseRow = 79 + insertedRiskRowsCount;
-  for (let i = 0; i < state.signers.length; i++) {
-    const s = state.signers[i];
-    const row = operariosBaseRow + i;
+  let signersShift = 0;
 
-    if (i > 0) {
-      ws.spliceRows(row, 0, []);
-      try {
+  if (state.signers.length > 0) {
+    const s0 = state.signers[0];
+    writeLeftCell(ws, 'B' + operariosBaseRow, s0.nombre);
+    writeLeftCell(ws, 'D' + operariosBaseRow, formatearRut(s0.rut));
+    writeLeftCell(ws, 'E' + operariosBaseRow, s0.cargo || '');
+    writeLeftCell(ws, 'G' + operariosBaseRow, s0.tareas || '');
+    await addSignatureImage(workbook, ws, s0.firma, 'A', operariosBaseRow);
+
+    if (state.signers.length > 1) {
+      const extraSigners = state.signers.length - 1;
+      safeInsertRows(ws, operariosBaseRow + 1, extraSigners, operariosBaseRow);
+      for (let i = 0; i < extraSigners; i++) {
+        const row = operariosBaseRow + 1 + i;
         ws.mergeCells(`B${row}:C${row}`);
         ws.mergeCells(`E${row}:F${row}`);
         ws.mergeCells(`G${row}:H${row}`);
-      } catch (e) {}
-    }
 
-    writeLeftCell(ws, 'B' + row, s.nombre);
-    writeLeftCell(ws, 'D' + row, formatearRut(s.rut));
-    writeLeftCell(ws, 'E' + row, s.cargo || '');
-    writeLeftCell(ws, 'G' + row, s.tareas || '');
-    await addSignatureImage(workbook, ws, s.firma, 'A', row);
+        const s = state.signers[i + 1];
+        writeLeftCell(ws, 'B' + row, s.nombre);
+        writeLeftCell(ws, 'D' + row, formatearRut(s.rut));
+        writeLeftCell(ws, 'E' + row, s.cargo || '');
+        writeLeftCell(ws, 'G' + row, s.tareas || '');
+        await addSignatureImage(workbook, ws, s.firma, 'A', row);
+      }
+      signersShift = extraSigners;
+    }
   }
 
-  // Ajustar desplazamiento de filas posteriores por inserciones dinámicas
-  const shift = insertedRiskRowsCount + Math.max(0, state.signers.length - 1);
+  // Desplazamiento acumulado para secciones posteriores
+  const shift = insertedRiskRowsCount + signersShift;
 
-  // VIII. Incidentes (escribir en fila 83 + shift, 1 celda debajo de encabezados)
+  // VIII. Incidentes (fila 83 + shift)
   const incidentesRow = 83 + shift;
   Object.entries(C.incidentes).forEach(([item]) => {
     if (state.multi['inc:' + item]) {
@@ -188,23 +280,36 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     }
   });
 
-  // X. Eventualidades (escribir en fila 95 + shift, 1 celda debajo del título)
+  // X. Eventualidades (fila 95 + shift)
   const eventualidadesRow = 95 + shift;
   if (state.final.eventualidades) writeLeftCell(ws, 'A' + eventualidadesRow, state.final.eventualidades);
 
-  // Cierre Supervisor
-  const cierreRow = 102 + shift;
+  // Footer signature: Firma de Supervisor exactamente en fila anterior (row - 1) a las etiquetas designadas en 102 + shift
+  const labelRow = 102 + shift;
+  const presenterRow = labelRow - 1;
+
   if (state.closingSig) {
-    writeCenterCell(ws, 'A' + cierreRow, state.closingSig.nombre);
-    if (state.closingSig.cargo) writeCenterCell(ws, 'D' + cierreRow, state.closingSig.cargo);
-    await addSignatureImageFit(workbook, ws, state.closingSig.firma, `F${cierreRow}:H${cierreRow}`);
+    writeCenterCell(ws, 'A' + presenterRow, state.closingSig.nombre);
+    if (state.closingSig.cargo) {
+      writeCenterCell(ws, 'D' + presenterRow, state.closingSig.cargo);
+    }
+    await addSignatureImageFit(workbook, ws, state.closingSig.firma, `F${presenterRow}:H${presenterRow}`);
   }
+
+  // Restaurar anchos de columna originales
+  originalColWidths.forEach((w, idx) => {
+    if (w !== undefined) ws.getColumn(idx + 1).width = w;
+  });
 }
 
 async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: ExcelJS.Worksheet) {
   const f = state.form;
   const C = CHARLA_CELLS;
 
+  // Preservar anchos de columna originales de la plantilla
+  const originalColWidths = ws.columns.map(c => c.width);
+
+  // Encabezados
   Object.entries(C.header).forEach(([id, addr]) => {
     if (id === 'fecha') {
       const fechaVal = formatDateChilean(f.fecha || getTodayISODate());
@@ -213,44 +318,152 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
       writeLeftCell(ws, addr, f[id]);
     }
   });
+
+  // Clasificación de temas estándar
   Object.entries(C.clasificacion).forEach(([item, [row, col]]) => {
     if (state.multi['0:' + item]) {
       ws.getCell(col + row).value = 'X';
-      if (item === 'Otro' && state.final.clasificacionOtro) {
-        writeLeftCell(ws, 'F' + row, state.final.clasificacionOtro);
-      }
     }
   });
-  if (state.final.mutual) writeLeftCell(ws, C.mutual, state.final.mutual);
-  if (state.final.comentarios) writeLeftCell(ws, C.comentarios, state.final.comentarios);
 
-  const cols = [C.participantesRoster.col1, C.participantesRoster.col2];
-  let extraRow = C.participantesRoster.col1.endRow + 1;
+  // Temas dinámicos: Reemplazar 'Otro' con el tema personalizado y desplazar/insertar filas para extras manteniendo formatos
+  const customTopics = (state.final.clasificacionOtro || '')
+    .split(/[\n,;]+/)
+    .map(t => t.trim())
+    .filter(Boolean);
 
+  let topicShift = 0;
+  if (state.multi['0:Otro'] || customTopics.length > 0) {
+    ws.getCell('E19').value = 'X';
+    if (customTopics.length > 0) {
+      writeLeftCell(ws, 'F19', customTopics[0]);
+    }
+
+    if (customTopics.length > 1) {
+      const extraTopicsCount = customTopics.length - 1;
+      safeInsertRows(ws, 20, extraTopicsCount, 19);
+
+      for (let i = 0; i < extraTopicsCount; i++) {
+        const rowNum = 20 + i;
+        ws.mergeCells(rowNum, 6, rowNum, 8); // F:H
+        ws.getCell(`E${rowNum}`).value = 'X';
+        writeLeftCell(ws, `F${rowNum}`, customTopics[i + 1]);
+      }
+      topicShift = extraTopicsCount;
+    }
+  }
+
+  // Asistentes y Firmas: emparejar con existentes, reemplazar 'Otro' para nuevos e insertar dinámicamente con firmas en col + 1
+  const rosterStartRow = 22 + topicShift;
+  const rosterEndRow = 32 + topicShift;
+
+  interface AttendeeSlot {
+    row: number;
+    nameCell: string;
+    sigCol: string;
+    originalName: string;
+    used: boolean;
+  }
+  const slots: AttendeeSlot[] = [];
+
+  for (let r = rosterStartRow; r <= rosterEndRow; r++) {
+    // Columna 1: Nombre en A (combinada A:C), Firma en D (columna + 1)
+    const valCol1 = (ws.getCell(`A${r}`).value || '').toString().trim();
+    slots.push({ row: r, nameCell: `A${r}`, sigCol: 'D', originalName: valCol1, used: false });
+
+    // Columna 2: Nombre en E (combinada E:G), Firma en H (columna + 1)
+    const valCol2 = (ws.getCell(`E${r}`).value || '').toString().trim();
+    slots.push({ row: r, nameCell: `E${r}`, sigCol: 'H', originalName: valCol2, used: false });
+  }
+
+  const unplacedSigners: typeof state.signers = [];
+
+  // Paso 1: Match con nombres preexistentes en la plantilla
   for (const s of state.signers) {
-    let placed = false;
-    for (const colDef of cols) {
-      for (let r = colDef.startRow; r <= colDef.endRow; r++) {
-        const cellName = (ws.getCell(colDef.nombreCol + r).value || '').toString().trim().toLowerCase();
-        if (cellName && cellName === s.nombre.trim().toLowerCase()) {
-          await addSignatureImage(workbook, ws, s.firma, colDef.firmaCol, r);
-          placed = true;
-          break;
+    const sNorm = normalizeName(s.nombre);
+    const matchedSlot = slots.find(
+      slot => !slot.used && normalizeName(slot.originalName) !== 'otro' && normalizeName(slot.originalName) === sNorm
+    );
+    if (matchedSlot) {
+      matchedSlot.used = true;
+      if (s.firma) {
+        await addSignatureImage(workbook, ws, s.firma, matchedSlot.sigCol, matchedSlot.row);
+      }
+    } else {
+      unplacedSigners.push(s);
+    }
+  }
+
+  // Paso 2: Asignar a espacios 'Otro' para nombres no preexistentes
+  const remainingSigners: typeof state.signers = [];
+  for (const s of unplacedSigners) {
+    const otroSlot = slots.find(slot => !slot.used && normalizeName(slot.originalName) === 'otro');
+    if (otroSlot) {
+      otroSlot.used = true;
+      writeLeftCell(ws, otroSlot.nameCell, s.nombre);
+      if (s.firma) {
+        await addSignatureImage(workbook, ws, s.firma, otroSlot.sigCol, otroSlot.row);
+      }
+    } else {
+      remainingSigners.push(s);
+    }
+  }
+
+  // Paso 3: Inserción dinámica de filas si se supera la capacidad de la plantilla
+  let attendeeShift = 0;
+  if (remainingSigners.length > 0) {
+    const rowsNeeded = Math.ceil(remainingSigners.length / 2);
+    const insertPos = rosterEndRow + 1;
+    safeInsertRows(ws, insertPos, rowsNeeded, rosterEndRow);
+
+    for (let i = 0; i < rowsNeeded; i++) {
+      const rowNum = insertPos + i;
+      ws.mergeCells(rowNum, 1, rowNum, 3); // A:C
+      ws.mergeCells(rowNum, 5, rowNum, 7); // E:G
+
+      const s1 = remainingSigners[i * 2];
+      const s2 = remainingSigners[i * 2 + 1];
+
+      if (s1) {
+        writeLeftCell(ws, `A${rowNum}`, s1.nombre);
+        if (s1.firma) {
+          await addSignatureImage(workbook, ws, s1.firma, 'D', rowNum);
         }
       }
-      if (placed) break;
+      if (s2) {
+        writeLeftCell(ws, `E${rowNum}`, s2.nombre);
+        if (s2.firma) {
+          await addSignatureImage(workbook, ws, s2.firma, 'H', rowNum);
+        }
+      } else {
+        writeLeftCell(ws, `E${rowNum}`, 'Otro');
+      }
     }
-    if (!placed) {
-      writeLeftCell(ws, C.participantesRoster.col1.nombreCol + extraRow, s.nombre);
-      await addSignatureImage(workbook, ws, s.firma, C.participantesRoster.col1.firmaCol, extraRow);
-      extraRow++;
-    }
+    attendeeShift = rowsNeeded;
   }
 
+  const totalShift = topicShift + attendeeShift;
+
+  // Mutual y Comentarios finales
+  const mutualRow = 34 + totalShift;
+  if (state.final.mutual) writeLeftCell(ws, `A${mutualRow}`, state.final.mutual);
+
+  const comentariosRow = 38 + totalShift;
+  if (state.final.comentarios) writeLeftCell(ws, `A${comentariosRow}`, state.final.comentarios);
+
+  // Footer signature: Ubicar nombre y firma exactamente una fila arriba (row - 1) de las etiquetas en 45 + totalShift
+  const labelRow = 45 + totalShift;
+  const presenterRow = labelRow - 1;
+
   if (state.closingSig) {
-    writeCenterCell(ws, 'A40', state.closingSig.nombre);
-    await addSignatureImageFit(workbook, ws, state.closingSig.firma, 'F38:H40');
+    writeCenterCell(ws, `A${presenterRow}`, state.closingSig.nombre);
+    await addSignatureImageFit(workbook, ws, state.closingSig.firma, `E${presenterRow}:H${presenterRow}`);
   }
+
+  // Restaurar anchos de columna originales
+  originalColWidths.forEach((w, idx) => {
+    if (w !== undefined) ws.getColumn(idx + 1).width = w;
+  });
 }
 
 export function ensureTriDefaults(state: AppState): AppState {
