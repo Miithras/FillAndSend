@@ -303,8 +303,10 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                   </div>
 
                   {state.multi[`${mIdx}:Otro`] && (
-                    <div style={{ marginTop: 14 }}>
-                      <DynamicOtroSection
+                    <div className="field" style={{ marginTop: 10 }}>
+                      <label>Especificar {group.title.split('.')[1] || group.title} (Otro)</label>
+                      <input
+                        type="text"
                         value={
                           mIdx === 0 ? (state.final.eppOtro || '') :
                           mIdx === 1 ? (state.final.maquinasOtro || '') :
@@ -312,17 +314,16 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                           mIdx === 3 ? (state.final.altoRiesgoOtro || '') :
                           (state.final[`otro_${mIdx}`] || '')
                         }
-                        onChange={val => {
+                        onChange={e => {
                           const fieldKey =
                             mIdx === 0 ? 'eppOtro' :
                             mIdx === 1 ? 'maquinasOtro' :
                             mIdx === 2 ? 'aspectosOtro' :
                             mIdx === 3 ? 'altoRiesgoOtro' :
                             `otro_${mIdx}`;
-                          onChangeFinalField(fieldKey, val);
+                          onChangeFinalField(fieldKey, e.target.value);
                         }}
-                        label={`Especificar ${group.title.split('.')[1] || group.title} (Otro)`}
-                        placeholder="Escribe el elemento y presiona ✓..."
+                        placeholder="Escribe la especificación para 'Otro'..."
                       />
                     </div>
                   )}
