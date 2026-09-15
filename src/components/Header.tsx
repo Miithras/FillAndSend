@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const headerTitle = state.screen === 'select'
     ? 'Seleccione el documento a emitir'
-    : (currentDoc?.label || 'ART Digital');
+    : (currentDoc?.label || 'RaycaDoc');
 
   const userPrefix = currentUser?.email ? currentUser.email.split('@')[0] : '';
 

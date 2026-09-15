@@ -30,7 +30,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onShow
     try {
       const result = await login(cleanEmail, cleanPass);
       if (result.success && result.user) {
-        onShowToast('¡Bienvenido a ART Digital!');
+        onShowToast('¡Bienvenido a RaycaDoc!');
         onLoginSuccess(result.user);
       } else {
         setErrorMessage(result.error || 'Credenciales inválidas');
@@ -48,7 +48,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onShow
         <div className="login-brand">
           <div className="login-badge">SEGURIDAD PWA</div>
           <h1 className="login-title">
-            ART <span>Digital</span>
+            Rayca<span>Doc</span>
           </h1>
           <div className="login-company">RAYCA INGENIERÍA SpA</div>
           <p className="login-desc">

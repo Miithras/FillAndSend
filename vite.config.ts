@@ -90,9 +90,9 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'templates/*.xlsx'],
         manifest: {
-          name: 'ART Digital - RAYCA Ingeniería',
-          short_name: 'ART Digital',
-          description: 'Llenado y firma de ART Mantención, ART Normal y Charla Inicial',
+          name: 'RaycaDoc - RAYCA Ingeniería',
+          short_name: 'RaycaDoc',
+          description: 'RaycaDoc — Emisión y firma de ART Mantención, ART Normal y Charla Inicial',
           theme_color: '#001E59',
           background_color: '#001E59',
           display: 'standalone',

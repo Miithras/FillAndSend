@@ -108,7 +108,7 @@ export async function sendDocumentEmail(state: AppState): Promise<void> {
 }
 
 export async function sendPasswordChangeNotification(email: string): Promise<boolean> {
-  const subject = 'Notificación de Seguridad: Contraseña actualizada en ART Digital';
+  const subject = 'Notificación de Seguridad: Contraseña actualizada en RaycaDoc';
 
   try {
     const resp = await fetch('/api/send-email', {
@@ -135,7 +135,7 @@ export async function sendPasswordChangeNotification(email: string): Promise<boo
     fd.append('_subject', subject);
     fd.append('_template', 'box');
     fd.append('_captcha', 'false');
-    fd.append('notificacion', 'Tu contraseña de acceso a ART Digital ha sido actualizada exitosamente.');
+    fd.append('notificacion', 'Tu contraseña de acceso a RaycaDoc ha sido actualizada exitosamente.');
     fd.append('usuario', email);
     fd.append('fecha', new Date().toLocaleString('es-CL'));
 
