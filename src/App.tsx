@@ -124,6 +124,17 @@ export function App() {
     }));
   };
 
+  const handleBulkToggleTri = (keys: string[], val: 'SI' | 'NO' | 'NA') => {
+    setState(prev => {
+      const nextTri = { ...prev.tri };
+      const allAlreadyVal = keys.every(k => nextTri[k] === val);
+      keys.forEach(k => {
+        nextTri[k] = allAlreadyVal ? null : val;
+      });
+      return { ...prev, tri: nextTri };
+    });
+  };
+
   const handleToggleMulti = (key: string) => {
     setState(prev => ({
       ...prev,
@@ -385,6 +396,7 @@ export function App() {
             onChangeField={handleChangeField}
             onChangeFinalField={handleChangeFinalField}
             onToggleTri={handleToggleTri}
+            onBulkToggleTri={handleBulkToggleTri}
             onToggleMulti={handleToggleMulti}
             onAddRisk={handleAddRisk}
             onChangeRisk={handleChangeRisk}

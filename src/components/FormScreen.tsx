@@ -12,6 +12,7 @@ interface FormScreenProps {
   onChangeField: (field: string, val: string) => void;
   onChangeFinalField: (field: string, val: string) => void;
   onToggleTri: (key: string, val: 'SI' | 'NO' | 'NA') => void;
+  onBulkToggleTri: (keys: string[], val: 'SI' | 'NO' | 'NA') => void;
   onToggleMulti: (key: string) => void;
   onAddRisk: () => void;
   onChangeRisk: (index: number, field: keyof RiskItem, val: string) => void;
@@ -26,6 +27,7 @@ export const FormScreen: React.FC<FormScreenProps> = ({
   onChangeField,
   onChangeFinalField,
   onToggleTri,
+  onBulkToggleTri,
   onToggleMulti,
   onAddRisk,
   onChangeRisk,
@@ -190,45 +192,86 @@ export const FormScreen: React.FC<FormScreenProps> = ({
         {/* PASO: VERIFICACIÓN PREVIA (TRI-ESTADO SI / NO / NA) */}
         {currentStepId === 'tri' && (
           <div>
-            {doc.triGroups.map((group, gIdx) => (
-              <div key={gIdx} className={`accordion ${state.uiOpen[`tri${gIdx}`] !== false ? 'open' : ''}`}>
-                <div className="accordion-head" onClick={() => onToggleAccordion(`tri${gIdx}`)}>
-                  <h3>{group.title}</h3>
-                  <span className="chev">▾</span>
-                </div>
-                <div className="accordion-body">
-                  {group.items.map(item => {
-                    const key = `${gIdx}:${item}`;
-                    const currentVal = state.tri[key];
-                    return (
-                      <div className="tri-item" key={item}>
-                        <span>{item}</span>
-                        <div className="tri-btns">
+            {doc.triGroups.map((group, gIdx) => {
+              const keys = group.items.map(item => `${gIdx}:${item}`);
+              const allSi = keys.length > 0 && keys.every(k => state.tri[k] === 'SI');
+              const allNo = keys.length > 0 && keys.every(k => state.tri[k] === 'NO');
+              const allNa = keys.length > 0 && keys.every(k => state.tri[k] === 'NA');
+
+              return (
+                <div key={gIdx} className={`accordion ${state.uiOpen[`tri${gIdx}`] !== false ? 'open' : ''}`}>
+                  <div className="accordion-head tri-accordion-head" onClick={() => onToggleAccordion(`tri${gIdx}`)}>
+                    <div className="accordion-head-content">
+                      <h3>{group.title}</h3>
+                      <div className="bulk-tri-bar" onClick={e => e.stopPropagation()}>
+                        <span className="bulk-tri-label">Marcar todo:</span>
+                        <div className="bulk-tri-btns">
                           <button
-                            className={`tri-btn ${currentVal === 'SI' ? 'active-si' : ''}`}
-                            onClick={() => onToggleTri(key, 'SI')}
+                            type="button"
+                            className={`bulk-tri-btn bulk-si ${allSi ? 'active-si' : ''}`}
+                            onClick={() => onBulkToggleTri(keys, 'SI')}
+                            title="Marcar todas las preguntas de esta sección como SÍ"
                           >
-                            SI
+                            SÍ
                           </button>
                           <button
-                            className={`tri-btn ${currentVal === 'NO' ? 'active-no' : ''}`}
-                            onClick={() => onToggleTri(key, 'NO')}
+                            type="button"
+                            className={`bulk-tri-btn bulk-no ${allNo ? 'active-no' : ''}`}
+                            onClick={() => onBulkToggleTri(keys, 'NO')}
+                            title="Marcar todas las preguntas de esta sección como NO"
                           >
                             NO
                           </button>
                           <button
-                            className={`tri-btn ${currentVal === 'NA' ? 'active-na' : ''}`}
-                            onClick={() => onToggleTri(key, 'NA')}
+                            type="button"
+                            className={`bulk-tri-btn bulk-na ${allNa ? 'active-na' : ''}`}
+                            onClick={() => onBulkToggleTri(keys, 'NA')}
+                            title="Marcar todas las preguntas de esta sección como N/A"
                           >
                             N/A
                           </button>
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                    <span className="chev">▾</span>
+                  </div>
+                  <div className="accordion-body">
+                    {group.items.map(item => {
+                      const key = `${gIdx}:${item}`;
+                      const currentVal = state.tri[key];
+                      return (
+                        <div className="tri-item" key={item}>
+                          <span>{item}</span>
+                          <div className="tri-btns">
+                            <button
+                              type="button"
+                              className={`tri-btn ${currentVal === 'SI' ? 'active-si' : ''}`}
+                              onClick={() => onToggleTri(key, 'SI')}
+                            >
+                              SI
+                            </button>
+                            <button
+                              type="button"
+                              className={`tri-btn ${currentVal === 'NO' ? 'active-no' : ''}`}
+                              onClick={() => onToggleTri(key, 'NO')}
+                            >
+                              NO
+                            </button>
+                            <button
+                              type="button"
+                              className={`tri-btn ${currentVal === 'NA' ? 'active-na' : ''}`}
+                              onClick={() => onToggleTri(key, 'NA')}
+                            >
+                              N/A
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

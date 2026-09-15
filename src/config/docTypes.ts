@@ -131,13 +131,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
     finalFields: [
       { id: 'eventualidades', label: 'X. Eventualidades y Notas', type: 'textarea' }
     ],
-    signerSchema: {
-      rutRequired: true,
-      extra: [
-        { id: 'cargo', label: 'Cargo' },
-        { id: 'tareas', label: 'Tareas asignadas' }
-      ]
-    },
+    signerSchema: { rutRequired: false, extra: [] },
     closing: {
       enabled: true, 
       title: 'Cierre — Supervisor o Encargado',
@@ -235,10 +229,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
     finalFields: [
       { id: 'eventualidades', label: 'X. Eventualidades', type: 'textarea' }
     ],
-    signerSchema: {
-      rutRequired: true,
-      extra: [{ id: 'cargo', label: 'Cargo' }, { id: 'tareas', label: 'Tareas Asignadas' }]
-    },
+    signerSchema: { rutRequired: false, extra: [] },
     closing: {
       enabled: true,
       title: 'Cierre — Supervisor o Encargado',

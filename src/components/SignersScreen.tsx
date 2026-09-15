@@ -243,7 +243,9 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
           placeholder="Escribe para buscar o ingresar nuevo..."
         />
         <div className="hint">
-          Selecciona de la nómina (autocompleta RUT y cargo) o escribe para ingresar uno nuevo.
+          {doc.signerSchema.rutRequired
+            ? 'Selecciona de la nómina (autocompleta RUT y cargo) o escribe para ingresar uno nuevo.'
+            : 'Selecciona de la nómina o escribe para ingresar un nuevo integrante.'}
         </div>
       </div>
 

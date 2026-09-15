@@ -411,7 +411,88 @@ header.topbar {
   padding-top: 14px;
 }
 
-/* TRI TOGGLES */
+/* TRI TOGGLES & BULK HEADER CONTROLS */
+.tri-accordion-head {
+  align-items: flex-start !important;
+}
+
+.accordion-head-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bulk-tri-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px 10px;
+  width: fit-content;
+  box-shadow: 0 1px 4px rgba(0, 30, 89, 0.04);
+}
+
+.bulk-tri-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--slate);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.bulk-tri-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.bulk-tri-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--slate);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.bulk-tri-btn:hover {
+  background: var(--bg-1);
+  color: var(--navy);
+  border-color: var(--cyan);
+}
+
+.bulk-tri-btn.active-si {
+  background: #10B981;
+  border-color: #059669;
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
+.bulk-tri-btn.active-no {
+  background: #EF4444;
+  border-color: #DC2626;
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+.bulk-tri-btn.active-na {
+  background: var(--slate);
+  border-color: var(--navy);
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(86, 101, 159, 0.3);
+}
+
 .tri-item {
   display: flex;
   align-items: center;
