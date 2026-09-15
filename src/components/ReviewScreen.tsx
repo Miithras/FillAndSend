@@ -80,9 +80,9 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
             <div className="review-row"><span className="k">Riesgos</span><span className="v">Sin registrar</span></div>
           ) : (
             state.risks.map((r, i) => (
-              <div className="review-row" key={i}>
+              <div className="review-row review-row-risk" key={i}>
                 <span className="k">{r.etapa || `Etapa ${i + 1}`}</span>
-                <span className="v">{r.evento || '—'} → {r.medida || '—'}</span>
+                <span className="v">{r.evento || '—'} <span className="arrow-sep">→</span> {r.medida || '—'}</span>
               </div>
             ))
           )}

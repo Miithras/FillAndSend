@@ -110,8 +110,8 @@ async function addSignatureImageFit(
 
   const imgId = workbook.addImage({ base64: dataUrl, extension: 'png' });
   ws.addImage(imgId, {
-    tl: { col: colToIndex(tlCol) + 0.05, row: tlRow - 1 + 0.05 },
-    br: { col: colToIndex(brCol) + 0.95, row: brRow - 0.05 }
+    tl: { col: colToIndex(tlCol) + 0.15, row: tlRow - 1 + 0.05 },
+    br: { col: colToIndex(brCol) + 0.85, row: brRow - 0.05 }
   } as any);
 }
 
@@ -456,6 +456,7 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
   const presenterRow = labelRow - 1;
 
   if (state.closingSig) {
+    ws.getRow(presenterRow).height = 42;
     writeCenterCell(ws, `A${presenterRow}`, state.closingSig.nombre);
     await addSignatureImageFit(workbook, ws, state.closingSig.firma, `E${presenterRow}:H${presenterRow}`);
   }
@@ -511,8 +512,8 @@ export async function buildExcelBlob(rawState: AppState): Promise<Blob> {
 export function generateExcelFileName(state: AppState): string {
   const doc = DOC_TYPES[state.docType];
   const site = (state.form.usuario || state.form.obra || 'documento').replace(/\s+/g, '_');
-  const dateStr = state.form.fecha || 'sin_fecha';
-  return `${doc.meta.codigo}_${site}_${dateStr}.xlsx`;
+  const today = getTodayISODate();
+  return `${doc.meta.codigo}_${site}_${today}.xlsx`;
 }
 
 export async function downloadOriginalExcel(state: AppState): Promise<void> {

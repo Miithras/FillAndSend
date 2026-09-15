@@ -32,7 +32,7 @@ export const INITIAL_STATE: AppState = {
   form: { fecha: getTodayISODate() },
   tri: {},
   multi: {},
-  risks: [],
+  risks: [{ etapa: '', evento: '', medida: '' }],
   final: {},
   signers: [],
   closingSig: null,

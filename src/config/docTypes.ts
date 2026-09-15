@@ -27,7 +27,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
           'Análisis de Riesgos en el Trabajo', 'Normas de Seguridad', 'Prevención y Amago de Incendios', 'Análisis de Accidentes',
           'Primeros Auxilios', 'Exposición a Riesgos Eléctricos', 'Exposición a Riesgos Específicos',
           'Trabajo en Altura Física y Geográfica', 'Manejo Manual de Carga', 'Medio Ambiente',
-          'Manejo y Almacenamiento de Materiales', 'Aspectos Legales'
+          'Manejo y Almacenamiento de Materiales', 'Aspectos Legales', 'Otro'
         ]
       }
     ],
@@ -139,9 +139,9 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
       ]
     },
     closing: {
-      enabled: true,
+      enabled: true, 
       title: 'Cierre — Supervisor o Encargado',
-      roleField: { id: 'cargo', label: 'Cargo' }
+      roleField: null
     }
   },
 
@@ -242,7 +242,7 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
     closing: {
       enabled: true,
       title: 'Cierre — Supervisor o Encargado',
-      roleField: { id: 'cargo', label: 'Cargo' }
+      roleField: null
     }
   }
 };

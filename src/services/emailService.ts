@@ -2,6 +2,7 @@ import { AppState } from '../types';
 import { DOC_TYPES } from '../config/docTypes';
 import { buildExcelBlob, generateExcelFileName } from './excelService';
 import { formatearRut } from '../utils/rut';
+import { getTodayISODate } from './storageService';
 
 export function buildSummaryText(state: AppState): string {
   const doc = DOC_TYPES[state.docType];
@@ -46,7 +47,8 @@ export async function sendDocumentEmail(state: AppState): Promise<void> {
   const blob = await buildExcelBlob(state);
   const base64Attachment = await blobToBase64(blob);
   const filename = generateExcelFileName(state);
-  const subject = `${doc.label} — ${state.form.obra || state.form.usuario || ''} — ${state.form.fecha || ''}`;
+  const dateStr = state.form.fecha || getTodayISODate();
+  const subject = `${doc.label} — ${state.form.obra || state.form.usuario || ''} — ${dateStr}`;
   const summary = buildSummaryText(state);
 
   // Intentar primero a través de nuestra API Serverless con Bluehost SMTP

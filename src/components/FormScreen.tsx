@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppState, RiskItem } from '../types';
 import { DOC_TYPES } from '../config/docTypes';
 import { WORKERS_DB } from '../config/workers';
 import { getTodayISODate } from '../services/storageService';
 import { RISK_ETAPAS, RISK_EVENTOS, RISK_MEDIDAS } from '../config/riskCatalog';
+import { SearchableCombobox } from './SearchableCombobox';
+import { DynamicOtroSection } from './DynamicOtroSection';
 
 interface FormScreenProps {
   state: AppState;
@@ -34,6 +36,13 @@ export const FormScreen: React.FC<FormScreenProps> = ({
 }) => {
   const doc = DOC_TYPES[state.docType];
   const isArt = state.docType === 'art_normal' || state.docType === 'art_mantencion';
+
+  // Garantizar que siempre haya al menos 1 etapa de riesgo al cargar ART
+  useEffect(() => {
+    if (isArt && doc.risks?.enabled && (!state.risks || state.risks.length === 0)) {
+      onAddRisk();
+    }
+  }, [isArt, doc.risks?.enabled, state.risks?.length, onAddRisk]);
 
   // Configuración de Pasos (Wizard / Stepper no lineal)
   const STEPS = isArt
@@ -251,10 +260,8 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                   </div>
 
                   {state.multi[`${mIdx}:Otro`] && (
-                    <div className="field" style={{ marginTop: 10 }}>
-                      <label>Especificar {group.title.split('.')[1] || group.title} (Otro)</label>
-                      <input
-                        type="text"
+                    <div style={{ marginTop: 14 }}>
+                      <DynamicOtroSection
                         value={
                           mIdx === 0 ? (state.final.eppOtro || '') :
                           mIdx === 1 ? (state.final.maquinasOtro || '') :
@@ -262,16 +269,17 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                           mIdx === 3 ? (state.final.altoRiesgoOtro || '') :
                           (state.final[`otro_${mIdx}`] || '')
                         }
-                        onChange={e => {
+                        onChange={val => {
                           const fieldKey =
                             mIdx === 0 ? 'eppOtro' :
                             mIdx === 1 ? 'maquinasOtro' :
                             mIdx === 2 ? 'aspectosOtro' :
                             mIdx === 3 ? 'altoRiesgoOtro' :
                             `otro_${mIdx}`;
-                          onChangeFinalField(fieldKey, e.target.value);
+                          onChangeFinalField(fieldKey, val);
                         }}
-                        placeholder="Escribe la especificación para 'Otro'..."
+                        label={`Especificar ${group.title.split('.')[1] || group.title} (Otro)`}
+                        placeholder="Escribe el elemento y presiona ✓..."
                       />
                     </div>
                   )}
@@ -309,13 +317,12 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                   </div>
 
                   {state.multi['0:Otro'] && (
-                    <div className="field" style={{ marginTop: 10 }}>
-                      <label>Especificar Tema (Otro)</label>
-                      <input
-                        type="text"
+                    <div style={{ marginTop: 14 }}>
+                      <DynamicOtroSection
                         value={state.final.clasificacionOtro || ''}
-                        onChange={e => onChangeFinalField('clasificacionOtro', e.target.value)}
-                        placeholder="Escribe la especificación del tema..."
+                        onChange={val => onChangeFinalField('clasificacionOtro', val)}
+                        label="Especificar temas adicionales (Otro)"
+                        placeholder="Escribe el nombre del tema y presiona ✓..."
                       />
                     </div>
                   )}
@@ -339,50 +346,35 @@ export const FormScreen: React.FC<FormScreenProps> = ({
 
                   <div className="field">
                     <label>{doc.risks.qEtapa}</label>
-                    <input
-                      type="text"
-                      list={`etapa-dl-${i}`}
+                    <SearchableCombobox
                       value={r.etapa || ''}
-                      onChange={e => onChangeRisk(i, 'etapa', e.target.value)}
+                      onChange={val => onChangeRisk(i, 'etapa', val)}
+                      options={RISK_ETAPAS}
                       placeholder="Escribe o selecciona la etapa..."
+                      ariaLabel={doc.risks.qEtapa}
                     />
-                    <datalist id={`etapa-dl-${i}`}>
-                      {RISK_ETAPAS.map((opt, idx) => (
-                        <option key={idx} value={opt} />
-                      ))}
-                    </datalist>
                   </div>
 
                   <div className="field">
                     <label>{doc.risks.qEvento}</label>
-                    <input
-                      type="text"
-                      list={`evento-dl-${i}`}
+                    <SearchableCombobox
                       value={r.evento || ''}
-                      onChange={e => onChangeRisk(i, 'evento', e.target.value)}
+                      onChange={val => onChangeRisk(i, 'evento', val)}
+                      options={RISK_EVENTOS}
                       placeholder="Escribe o selecciona el riesgo/evento..."
+                      ariaLabel={doc.risks.qEvento}
                     />
-                    <datalist id={`evento-dl-${i}`}>
-                      {RISK_EVENTOS.map((opt, idx) => (
-                        <option key={idx} value={opt} />
-                      ))}
-                    </datalist>
                   </div>
 
                   <div className="field">
                     <label>{doc.risks.qMedida}</label>
-                    <input
-                      type="text"
-                      list={`medida-dl-${i}`}
+                    <SearchableCombobox
                       value={r.medida || ''}
-                      onChange={e => onChangeRisk(i, 'medida', e.target.value)}
+                      onChange={val => onChangeRisk(i, 'medida', val)}
+                      options={RISK_MEDIDAS}
                       placeholder="Escribe o selecciona la medida de control..."
+                      ariaLabel={doc.risks.qMedida}
                     />
-                    <datalist id={`medida-dl-${i}`}>
-                      {RISK_MEDIDAS.map((opt, idx) => (
-                        <option key={idx} value={opt} />
-                      ))}
-                    </datalist>
                   </div>
                 </div>
               ))}

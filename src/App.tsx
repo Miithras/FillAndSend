@@ -87,7 +87,7 @@ export function App() {
       form: {},
       tri: {},
       multi: {},
-      risks: [],
+      risks: (id === 'art_normal' || id === 'art_mantencion') ? [{ etapa: '', evento: '', medida: '' }] : [],
       final: {},
       signers: [],
       closingSig: null
