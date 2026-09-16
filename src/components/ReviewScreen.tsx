@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppState } from '../types';
 import { DOC_TYPES } from '../config/docTypes';
 import { formatearRut } from '../utils/rut';
@@ -23,6 +23,7 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
   onShareExcel,
   onDownloadExcel
 }) => {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const doc = DOC_TYPES[state.docType];
   const presenterName = (state.form.instructor || state.form.supervisor || '').trim();
   const allSigned = state.signers.length > 0 && state.signers.every(s => s.firma);
@@ -164,12 +165,77 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
 
       {/* BARRA INFERIOR DESLIZABLE (EXPANDABLE BOTTOM SHEET) */}
       <ExpandableActionBar
-        onSendDocument={onSendDocument}
+        onSendDocument={() => setShowConfirmModal(true)}
         onShareExcel={onShareExcel}
         onDownloadExcel={onDownloadExcel}
         ready={!!ready}
         sending={state.sendStatus === 'sending'}
       />
+
+      {/* MODAL DE CONFIRMACIÓN DE ENVÍO */}
+      {showConfirmModal && (
+        <div className="modal-overlay" onClick={() => setShowConfirmModal(false)}>
+          <div className="modal-dialog" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-icon-badge">🚀</div>
+              <div>
+                <h3 className="modal-title">¿Finalizar y enviar por correo?</h3>
+                <p className="modal-subtitle">Verifica los datos del despacho antes de confirmar</p>
+              </div>
+            </div>
+
+            <div className="modal-body">
+              <div className="modal-summary-box">
+                <div className="modal-summary-row">
+                  <span className="modal-summary-label">Documento:</span>
+                  <span className="modal-summary-val">{doc.label} ({doc.meta.codigo})</span>
+                </div>
+                <div className="modal-summary-row">
+                  <span className="modal-summary-label">Destinatario:</span>
+                  <span className="modal-summary-val">{state.destinatario || '(No especificado)'}</span>
+                </div>
+                {state.conCopia && (
+                  <div className="modal-summary-row">
+                    <span className="modal-summary-label">Con copia (CC):</span>
+                    <span className="modal-summary-val">{state.conCopia}</span>
+                  </div>
+                )}
+                <div className="modal-summary-row">
+                  <span className="modal-summary-label">Firmantes:</span>
+                  <span className="modal-summary-val">
+                    {state.signers.filter(s => s.firma).length} trabajadores + 1 supervisor
+                  </span>
+                </div>
+              </div>
+
+              <div className="modal-notice">
+                <span>⚠️</span>
+                <span>Al confirmar, se generará la planilla Excel oficial y se despachará automáticamente por correo a la jefatura.</span>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Revisar datos
+              </button>
+              <button
+                type="button"
+                className="btn-confirm"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  onSendDocument();
+                }}
+              >
+                ✓ Sí, enviar ahora
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

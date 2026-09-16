@@ -4,6 +4,7 @@ import { DOC_TYPES } from '../config/docTypes';
 import { ART_CELLS, CHARLA_CELLS, colToIndex } from '../config/excelMappings';
 import { formatearRut } from '../utils/rut';
 import { getTodayISODate, formatDateChilean } from './storageService';
+import { WORKERS_DB } from '../config/workers';
 
 /**
  * Normaliza nombres para comparación flexible (insensible a mayúsculas, tildes y espacios)
@@ -14,6 +15,14 @@ function normalizeName(str: string | null | undefined): string {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
+}
+
+/**
+ * Busca datos de un trabajador por nombre en WORKERS_DB (insensible a tildes y mayúsculas)
+ */
+function lookupWorker(name: string): { rut?: string; cargo?: string } | undefined {
+  const norm = normalizeName(name);
+  return WORKERS_DB.find(w => normalizeName(w.nombre) === norm);
 }
 
 /**
@@ -106,12 +115,20 @@ async function addSignatureImageFit(
   const tlCol = tlAddr.match(/[A-Z]+/)?.[0] || 'A';
   const tlRow = parseInt(tlAddr.match(/\d+/)?.[0] || '1', 10);
   const brCol = brAddr.match(/[A-Z]+/)?.[0] || 'B';
-  const brRow = parseInt(brAddr.match(/\d+/)?.[0] || '1', 10);
 
+  const startColIdx = colToIndex(tlCol);
+  const endColIdx = colToIndex(brCol);
+  const numCols = endColIdx - startColIdx + 1;
+
+  // Firma de supervisor: altura duplicada (height * 2 = 52px vs 26px estándar)
+  // Centrado horizontal calculado según las columnas del rango y desplazamiento superior (top offset: 0.06)
+  // para centrado vertical exacto dentro de la fila de 45pt
   const imgId = workbook.addImage({ base64: dataUrl, extension: 'png' });
+  const colOffset = Math.max(0.1, (numCols - 1.8) / 2);
+
   ws.addImage(imgId, {
-    tl: { col: colToIndex(tlCol) + 0.15, row: tlRow - 1 + 0.05 },
-    br: { col: colToIndex(brCol) + 0.85, row: brRow - 0.05 }
+    tl: { col: startColIdx + colOffset, row: tlRow - 1 + 0.06 },
+    ext: { width: 170, height: 52 }
   } as any);
 }
 
@@ -223,15 +240,19 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     }
   }
 
-  // VII. Operarios en terreno presentes (dinámico con safeInsertRows)
+  // VII. Operarios en terreno presentes (dinámico con safeInsertRows y lookup de RUT / Cargo)
   const operariosBaseRow = 79 + insertedRiskRowsCount;
   let signersShift = 0;
 
   if (state.signers.length > 0) {
     const s0 = state.signers[0];
+    const w0 = lookupWorker(s0.nombre);
+    const rut0 = s0.rut || w0?.rut || '';
+    const cargo0 = s0.cargo || w0?.cargo || '';
+
     writeLeftCell(ws, 'B' + operariosBaseRow, s0.nombre);
-    writeLeftCell(ws, 'D' + operariosBaseRow, formatearRut(s0.rut));
-    writeLeftCell(ws, 'E' + operariosBaseRow, s0.cargo || '');
+    writeLeftCell(ws, 'D' + operariosBaseRow, formatearRut(rut0));
+    writeLeftCell(ws, 'E' + operariosBaseRow, cargo0);
     writeLeftCell(ws, 'G' + operariosBaseRow, s0.tareas || '');
     await addSignatureImage(workbook, ws, s0.firma, 'A', operariosBaseRow);
 
@@ -245,9 +266,13 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
         ws.mergeCells(`G${row}:H${row}`);
 
         const s = state.signers[i + 1];
+        const w = lookupWorker(s.nombre);
+        const rut = s.rut || w?.rut || '';
+        const cargo = s.cargo || w?.cargo || '';
+
         writeLeftCell(ws, 'B' + row, s.nombre);
-        writeLeftCell(ws, 'D' + row, formatearRut(s.rut));
-        writeLeftCell(ws, 'E' + row, s.cargo || '');
+        writeLeftCell(ws, 'D' + row, formatearRut(rut));
+        writeLeftCell(ws, 'E' + row, cargo);
         writeLeftCell(ws, 'G' + row, s.tareas || '');
         await addSignatureImage(workbook, ws, s.firma, 'A', row);
       }
@@ -290,9 +315,13 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
   const presenterRow = labelRow - 1;
 
   if (state.closingSig) {
+    const wSup = lookupWorker(state.closingSig.nombre);
+    const cargoSup = state.closingSig.cargo || wSup?.cargo || '';
+
+    ws.getRow(presenterRow).height = 45;
     writeCenterCell(ws, 'A' + presenterRow, state.closingSig.nombre);
-    if (state.closingSig.cargo) {
-      writeCenterCell(ws, 'D' + presenterRow, state.closingSig.cargo);
+    if (cargoSup) {
+      writeCenterCell(ws, 'D' + presenterRow, cargoSup);
     }
     await addSignatureImageFit(workbook, ws, state.closingSig.firma, `F${presenterRow}:H${presenterRow}`);
   }
@@ -457,7 +486,7 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
   const presenterRow = labelRow - 1;
 
   if (state.closingSig) {
-    ws.getRow(presenterRow).height = 42;
+    ws.getRow(presenterRow).height = 45;
     writeCenterCell(ws, `A${presenterRow}`, state.closingSig.nombre);
     await addSignatureImageFit(workbook, ws, state.closingSig.firma, `E${presenterRow}:H${presenterRow}`);
   }

@@ -113,36 +113,60 @@ export const FormScreen: React.FC<FormScreenProps> = ({
 
                     {isNameDropdown ? (
                       <div>
-                        <select
-                          className="select-worker"
-                          value={WORKERS_DB.some(w => w.nombre === state.form[f.id]) ? state.form[f.id] : (state.form[f.id] ? '__OTHER__' : '')}
-                          onChange={e => {
-                            const val = e.target.value;
-                            if (val === '__OTHER__') {
-                              onChangeField(f.id, '');
-                            } else {
-                              onChangeField(f.id, val);
-                            }
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '12px',
-                            background: 'var(--bg-1)',
-                            border: '1px solid var(--line)',
-                            color: 'var(--text-hi)',
-                            borderRadius: '10px',
-                            fontSize: '14px',
-                            marginBottom: 6
-                          }}
-                        >
-                          <option value="">-- Seleccionar de la lista --</option>
-                          {WORKERS_DB.map(w => (
-                            <option key={w.rut} value={w.nombre}>
-                              {w.nombre}
-                            </option>
-                          ))}
-                          <option value="__OTHER__">Otro (Ingresar manualmente)...</option>
-                        </select>
+                        <div className="select-wrapper" style={{ position: 'relative', width: '100%', marginBottom: 6 }}>
+                          <select
+                            className="select-worker"
+                            value={WORKERS_DB.some(w => w.nombre === state.form[f.id]) ? state.form[f.id] : (state.form[f.id] ? '__OTHER__' : '')}
+                            onChange={e => {
+                              const val = e.target.value;
+                              if (val === '__OTHER__') {
+                                onChangeField(f.id, '');
+                              } else {
+                                onChangeField(f.id, val);
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '12px 48px 12px 14px',
+                              background: 'var(--bg-1)',
+                              border: '1px solid var(--line)',
+                              color: 'var(--text-hi)',
+                              borderRadius: '10px',
+                              fontSize: '14px',
+                              appearance: 'none',
+                              WebkitAppearance: 'none',
+                              MozAppearance: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <option value="">-- Seleccionar de la lista --</option>
+                            {WORKERS_DB.map(w => (
+                              <option key={w.rut} value={w.nombre}>
+                                {w.nombre}
+                              </option>
+                            ))}
+                            <option value="__OTHER__">Otro (Ingresar manualmente)...</option>
+                          </select>
+                          <div
+                            className="select-chevron-icon"
+                            style={{
+                              position: 'absolute',
+                              right: '20px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              pointerEvents: 'none',
+                              color: 'var(--text-muted)',
+                              fontSize: '13px',
+                              lineHeight: 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              userSelect: 'none'
+                            }}
+                          >
+                            ▼
+                          </div>
+                        </div>
 
                         {(!WORKERS_DB.some(w => w.nombre === state.form[f.id]) || state.form[f.id] === '') && (
                           <input
