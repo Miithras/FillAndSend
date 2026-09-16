@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from './types';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';

@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from './types';
 import nodemailer from 'nodemailer';
 
 function escapeHtml(str: string | null | undefined): string {
