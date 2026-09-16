@@ -275,7 +275,8 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
       ws.getCell(col + row).value = 'X';
       if (item === 'Otro' && state.final.visitaOtro) {
         const labelCol = col === 'A' ? 'B' : 'E';
-        writeLeftCell(ws, labelCol + row, state.final.visitaOtro);
+        const formattedVisitas = state.final.visitaOtro.split('\n').filter(Boolean).join(', ');
+        writeLeftCell(ws, labelCol + row, formattedVisitas);
       }
     }
   });

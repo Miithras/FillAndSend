@@ -303,10 +303,8 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                   </div>
 
                   {state.multi[`${mIdx}:Otro`] && (
-                    <div className="field" style={{ marginTop: 10 }}>
-                      <label>Especificar {group.title.split('.')[1] || group.title} (Otro)</label>
-                      <input
-                        type="text"
+                    <div style={{ marginTop: 14 }}>
+                      <DynamicOtroSection
                         value={
                           mIdx === 0 ? (state.final.eppOtro || '') :
                           mIdx === 1 ? (state.final.maquinasOtro || '') :
@@ -314,16 +312,17 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                           mIdx === 3 ? (state.final.altoRiesgoOtro || '') :
                           (state.final[`otro_${mIdx}`] || '')
                         }
-                        onChange={e => {
+                        onChange={val => {
                           const fieldKey =
                             mIdx === 0 ? 'eppOtro' :
                             mIdx === 1 ? 'maquinasOtro' :
                             mIdx === 2 ? 'aspectosOtro' :
                             mIdx === 3 ? 'altoRiesgoOtro' :
                             `otro_${mIdx}`;
-                          onChangeFinalField(fieldKey, e.target.value);
+                          onChangeFinalField(fieldKey, val);
                         }}
-                        placeholder="Escribe la especificación para 'Otro'..."
+                        label={`Especificar ${group.title.split('.')[1] || group.title} (Otro)`}
+                        placeholder={`Escribe la especificación para ${group.title.split('.')[1]?.trim() || 'Otro'} y presiona ✓...`}
                       />
                     </div>
                   )}
@@ -451,13 +450,12 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                     })}
                   </div>
                   {state.multi['4:Otro'] && (
-                    <div className="field" style={{ marginTop: 10 }}>
-                      <label>Especificar Visita en Terreno (Otro)</label>
-                      <input
-                        type="text"
+                    <div style={{ marginTop: 14 }}>
+                      <DynamicOtroSection
                         value={state.final.visitaOtro || ''}
-                        onChange={e => onChangeFinalField('visitaOtro', e.target.value)}
-                        placeholder="Ej: Pedro Morales (Inspector Técnico)"
+                        onChange={val => onChangeFinalField('visitaOtro', val)}
+                        label="Especificar Visitas en Terreno (Otro)"
+                        placeholder="Ej: Pedro Morales (Inspector Técnico) y presiona ✓..."
                       />
                     </div>
                   )}

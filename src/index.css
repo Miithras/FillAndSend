@@ -376,7 +376,7 @@ header.topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 14px 22px;
   cursor: pointer;
   user-select: none;
 }
@@ -393,7 +393,9 @@ header.topbar {
 .accordion-head .chev {
   color: var(--slate);
   transition: transform 0.2s;
-  font-size: 14px;
+  font-size: 15px;
+  margin-right: 6px;
+  flex-shrink: 0;
 }
 
 .accordion.open .chev {
@@ -474,7 +476,7 @@ header.topbar {
   border-color: #059669;
   color: #FFFFFF;
   font-weight: 800;
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
 }
 
 .bulk-tri-btn.active-no {
@@ -482,15 +484,15 @@ header.topbar {
   border-color: #DC2626;
   color: #FFFFFF;
   font-weight: 800;
-  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
 }
 
 .bulk-tri-btn.active-na {
-  background: var(--slate);
-  border-color: var(--navy);
+  background: #2563EB;
+  border-color: #1D4ED8;
   color: #FFFFFF;
   font-weight: 800;
-  box-shadow: 0 2px 6px rgba(86, 101, 159, 0.3);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
 }
 
 .tri-item {
@@ -533,22 +535,27 @@ header.topbar {
 }
 
 .tri-btn.active-si {
-  background: var(--cyan);
-  border-color: var(--cyan);
-  color: var(--white);
+  background: #10B981;
+  border-color: #059669;
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 2px 5px rgba(16, 185, 129, 0.3);
 }
 
 .tri-btn.active-no {
-  background: var(--slate);
-  border-color: var(--slate);
-  color: var(--white);
+  background: #EF4444;
+  border-color: #DC2626;
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.3);
 }
 
 .tri-btn.active-na {
-  background: var(--bg-2);
-  border-color: var(--line);
-  color: var(--navy);
+  background: #2563EB;
+  border-color: #1D4ED8;
+  color: #FFFFFF;
   font-weight: 800;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3);
 }
 
 /* CHECKBOX GRID */
@@ -1483,15 +1490,15 @@ footer.fixed-bottom-sheet {
 
 .combobox-input-wrap input {
   width: 100%;
-  padding-right: 68px !important;
+  padding-right: 84px !important;
 }
 
 .combobox-actions {
   position: absolute;
-  right: 6px;
+  right: 14px;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   z-index: 2;
 }
 
@@ -1659,6 +1666,21 @@ footer.fixed-bottom-sheet {
 
 .dynamic-otro-input {
   flex: 1;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  color: var(--navy);
+  padding: 12px 13px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s, outline 0.2s, box-shadow 0.2s;
+}
+
+.dynamic-otro-input:focus {
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0, 160, 184, 0.15);
 }
 
 .dynamic-otro-confirm-btn {
