@@ -475,7 +475,6 @@ header.topbar {
   background: #10B981;
   border-color: #059669;
   color: #FFFFFF;
-  font-weight: 800;
   box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
 }
 
@@ -483,7 +482,6 @@ header.topbar {
   background: #EF4444;
   border-color: #DC2626;
   color: #FFFFFF;
-  font-weight: 800;
   box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
 }
 
@@ -491,7 +489,6 @@ header.topbar {
   background: #2563EB;
   border-color: #1D4ED8;
   color: #FFFFFF;
-  font-weight: 800;
   box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
 }
 
@@ -538,7 +535,6 @@ header.topbar {
   background: #10B981;
   border-color: #059669;
   color: #FFFFFF;
-  font-weight: 800;
   box-shadow: 0 2px 5px rgba(16, 185, 129, 0.3);
 }
 
@@ -546,7 +542,6 @@ header.topbar {
   background: #EF4444;
   border-color: #DC2626;
   color: #FFFFFF;
-  font-weight: 800;
   box-shadow: 0 2px 5px rgba(239, 68, 68, 0.3);
 }
 
@@ -554,7 +549,6 @@ header.topbar {
   background: #2563EB;
   border-color: #1D4ED8;
   color: #FFFFFF;
-  font-weight: 800;
   box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3);
 }
 
