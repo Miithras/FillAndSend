@@ -21,6 +21,33 @@ import { Toast } from './components/Toast';
 import { LoginScreen } from './components/LoginScreen';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 
+// Sub-rutas asociadas a cada paso del flujo
+function getScreenFromHash(hash: string): AppState['screen'] {
+  const h = (hash || '').replace(/^#/, '').toLowerCase();
+  if (h === 'step-1' || h === 'step1' || h === 'form') return 'form';
+  if (h === 'step-2' || h === 'step2' || h === 'signers') return 'signers';
+  if (h === 'step-3' || h === 'step3' || h === 'review') return 'review';
+  return 'select';
+}
+
+function getHashForScreen(screen: AppState['screen']): string {
+  switch (screen) {
+    case 'form': return '#step-1';
+    case 'signers': return '#step-2';
+    case 'review': return '#step-3';
+    default: return '';
+  }
+}
+
+function getStepNumber(screen: AppState['screen']): number {
+  switch (screen) {
+    case 'form': return 1;
+    case 'signers': return 2;
+    case 'review': return 3;
+    default: return 0;
+  }
+}
+
 export function App() {
   const [currentUser, setCurrentUser] = useState<CurrentUserSession | null>(() => getCurrentUser());
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -43,6 +70,72 @@ export function App() {
   const refreshHistoryCount = async () => {
     const records = await getHistory();
     setHistoryCount(records.length);
+  };
+
+  // Integración con History API para soportar botones y gestos nativos de retroceso en móviles
+  useEffect(() => {
+    // 1. Inicializar el estado de historia si no existe
+    const currentHashScreen = getScreenFromHash(window.location.hash);
+    const initialScreen = state.screen !== 'select' ? state.screen : currentHashScreen;
+    const initialStep = getStepNumber(initialScreen);
+    const initialUrl = getHashForScreen(initialScreen) || window.location.pathname;
+
+    if (!window.history.state || window.history.state.screen !== initialScreen) {
+      window.history.replaceState({ screen: initialScreen, step: initialStep }, '', initialUrl);
+    }
+
+    // 2. Escuchar popstate (botón atrás nativo Android / gestos de retroceso / browser back)
+    const handlePopState = (event: PopStateEvent) => {
+      const targetScreen: AppState['screen'] =
+        event.state?.screen || getScreenFromHash(window.location.hash) || 'select';
+
+      // Cerrar modales activos al retroceder para que no queden superpuestos
+      setActiveSignerIndex(null);
+      setShowClosingModal(false);
+      setShowClosingCanvasModal(false);
+      setShowHistoryModal(false);
+      setShowChangePasswordModal(false);
+      setConfirmConfig(null);
+
+      setState(prev => {
+        if (prev.screen !== targetScreen) {
+          return { ...prev, screen: targetScreen };
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateToScreen = (nextScreen: AppState['screen'], mode: 'push' | 'replace' | 'back' = 'push') => {
+    const nextStep = getStepNumber(nextScreen);
+    const hash = getHashForScreen(nextScreen);
+    const url = hash ? `${window.location.pathname}${hash}` : window.location.pathname;
+
+    if (mode === 'back') {
+      // Si el historial del navegador tiene una entrada con paso mayor, usamos window.history.back()
+      // lo cual dispara popstate y mantiene el stack sincronizado
+      if (window.history.state && typeof window.history.state.step === 'number' && window.history.state.step > nextStep) {
+        window.history.back();
+        return;
+      }
+      // Fallback si no hay historial previo registrado (ej. refresco de página)
+      window.history.replaceState({ screen: nextScreen, step: nextStep }, '', url);
+      setState(prev => ({ ...prev, screen: nextScreen }));
+      return;
+    }
+
+    if (mode === 'replace') {
+      window.history.replaceState({ screen: nextScreen, step: nextStep }, '', url);
+      setState(prev => ({ ...prev, screen: nextScreen }));
+      return;
+    }
+
+    // mode === 'push'
+    window.history.pushState({ screen: nextScreen, step: nextStep }, '', url);
+    setState(prev => ({ ...prev, screen: nextScreen }));
   };
 
   // Cargar borrador inicial, contador de historial, verificación de sesión segura y sincronización automática offline
@@ -80,6 +173,7 @@ export function App() {
 
   // Handlers Selección
   const handleSelectDoc = (id: DocTypeId) => {
+    window.history.pushState({ screen: 'form', step: 1 }, '', '#step-1');
     setState(prev => ({
       ...prev,
       docType: id,
@@ -97,6 +191,9 @@ export function App() {
   const handleContinueDraft = () => {
     const draft = loadDraft();
     if (draft) {
+      const targetScreen = draft.screen || 'form';
+      const step = getStepNumber(targetScreen);
+      window.history.pushState({ screen: targetScreen, step }, '', getHashForScreen(targetScreen));
       setState(draft);
       setHasDraft(false);
     }
@@ -105,6 +202,7 @@ export function App() {
   const handleDiscardDraft = () => {
     clearDraft();
     setHasDraft(false);
+    window.history.replaceState({ screen: 'select', step: 0 }, '', window.location.pathname);
     showToast('Borrador descartado');
   };
 
@@ -278,6 +376,7 @@ export function App() {
       clearDraft();
       setState(INITIAL_STATE);
       setHasDraft(false);
+      window.history.pushState({ screen: 'select', step: 0 }, '', window.location.pathname);
       await refreshHistoryCount();
       showToast('Documento finalizado y guardado en historial 📜');
 
@@ -402,8 +501,8 @@ export function App() {
             onChangeRisk={handleChangeRisk}
             onDeleteRisk={handleDeleteRisk}
             onToggleAccordion={handleToggleAccordion}
-            onBackToSelect={() => setState(prev => ({ ...prev, screen: 'select' }))}
-            onGoToSigners={() => setState(prev => ({ ...prev, screen: 'signers' }))}
+            onBackToSelect={() => navigateToScreen('select', 'back')}
+            onGoToSigners={() => navigateToScreen('signers', 'push')}
           />
         )}
 
@@ -415,8 +514,8 @@ export function App() {
             onClearAllSigners={handleClearAllSigners}
             onOpenSignModal={idx => setActiveSignerIndex(idx)}
             onOpenClosingModal={handleOpenClosingModal}
-            onBackToForm={() => setState(prev => ({ ...prev, screen: 'form' }))}
-            onGoToReview={() => setState(prev => ({ ...prev, screen: 'review' }))}
+            onBackToForm={() => navigateToScreen('form', 'back')}
+            onGoToReview={() => navigateToScreen('review', 'push')}
             onShowToast={showToast}
           />
         )}
@@ -426,7 +525,7 @@ export function App() {
             state={state}
             onChangeDestinatario={email => setState(prev => ({ ...prev, destinatario: email }))}
             onChangeConCopia={email => setState(prev => ({ ...prev, conCopia: email }))}
-            onBackToSigners={() => setState(prev => ({ ...prev, screen: 'signers' }))}
+            onBackToSigners={() => navigateToScreen('signers', 'back')}
             onSendDocument={handleSendDocument}
             onShareExcel={handleShareExcel}
             onDownloadExcel={handleDownloadExcel}
@@ -443,6 +542,9 @@ export function App() {
           }}
           onLoadState={s => {
             setState(s);
+            const targetScreen = s.screen || 'form';
+            const step = getStepNumber(targetScreen);
+            window.history.pushState({ screen: targetScreen, step }, '', getHashForScreen(targetScreen));
             showToast('Documento cargado en el formulario');
           }}
           onShowToast={showToast}
