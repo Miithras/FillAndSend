@@ -416,6 +416,16 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                   ? r.medidas
                   : (r.medida ? [r.medida] : []);
 
+                const isSelectedInAnotherStep = (opt: string) => {
+                  const norm = (opt || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+                  if (!norm) return false;
+                  return state.risks.some((otherRisk, otherIdx) => {
+                    if (otherIdx === i) return false;
+                    const otherNorm = (otherRisk.etapa || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+                    return otherNorm === norm;
+                  });
+                };
+
                 return (
                   <div className="risk-row" key={i}>
                     <button className="del" onClick={() => onDeleteRisk(i)} title="Eliminar etapa de riesgo">✕</button>
@@ -428,6 +438,8 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                         options={RISK_ETAPAS}
                         placeholder="Escribe o selecciona la etapa..."
                         ariaLabel={doc.risks.qEtapa}
+                        isOptionDisabled={isSelectedInAnotherStep}
+                        disabledHint="Esta etapa ya fue seleccionada en otro paso"
                       />
                     </div>
 

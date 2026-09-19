@@ -6,6 +6,8 @@ interface SearchableComboboxProps {
   options: string[];
   placeholder?: string;
   ariaLabel?: string;
+  isOptionDisabled?: (opt: string) => boolean;
+  disabledHint?: string;
 }
 
 export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
@@ -13,7 +15,9 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
   onChange,
   options,
   placeholder = 'Escribe o selecciona...',
-  ariaLabel
+  ariaLabel,
+  isOptionDisabled,
+  disabledHint
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(value || '');
@@ -60,7 +64,13 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
     if (!isOpen) setIsOpen(true);
   };
 
+  const isCurrentDuplicate = useMemo(() => {
+    if (!value || !isOptionDisabled) return false;
+    return isOptionDisabled(value);
+  }, [value, isOptionDisabled]);
+
   const handleSelectOption = (opt: string) => {
+    if (isOptionDisabled && isOptionDisabled(opt)) return;
     setSearchQuery(opt);
     onChange(opt);
     setIsOpen(false);
@@ -113,6 +123,13 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
         </div>
       </div>
 
+      {isCurrentDuplicate && (
+        <div className="combobox-duplicate-warning" style={{ fontSize: 11.5, color: '#d97706', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+          <span>⚠️</span>
+          <span>{disabledHint || 'Esta etapa ya fue seleccionada en otro paso.'}</span>
+        </div>
+      )}
+
       {isOpen && (
         <div className="combobox-dropdown" role="listbox">
           <div className="combobox-header">
@@ -127,23 +144,37 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
           ) : (
             filteredOptions.map((opt, idx) => {
               const isSelected = normalize(value) === normalize(opt);
+              const isDisabled = isOptionDisabled ? isOptionDisabled(opt) : false;
+
               return (
                 <div
                   key={idx}
-                  className={`combobox-option ${isSelected ? 'already-added' : ''}`}
-                  onClick={() => handleSelectOption(opt)}
+                  className={`combobox-option ${isSelected ? 'already-added' : ''} ${isDisabled ? 'disabled' : ''}`}
+                  onClick={() => {
+                    if (!isDisabled) handleSelectOption(opt);
+                  }}
                   role="option"
                   aria-selected={isSelected}
+                  aria-disabled={isDisabled}
                   style={{
                     padding: '8px 12px',
                     fontSize: '13px',
                     lineHeight: '1.4',
-                    color: isSelected ? 'var(--cyan)' : 'var(--navy)',
-                    fontWeight: isSelected ? 700 : 500
+                    color: isDisabled ? 'var(--slate)' : isSelected ? 'var(--cyan)' : 'var(--navy)',
+                    fontWeight: isSelected ? 700 : 500,
+                    opacity: isDisabled ? 0.4 : 1,
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
+                    backgroundColor: isDisabled ? 'rgba(0, 30, 89, 0.03)' : undefined
                   }}
+                  title={isDisabled ? (disabledHint || 'Esta opción ya fue seleccionada en otra etapa') : undefined}
                 >
-                  <span style={{ flex: 1 }}>{opt}</span>
+                  <span style={{ flex: 1, textDecoration: isDisabled ? 'line-through' : 'none' }}>{opt}</span>
                   {isSelected && <span style={{ fontSize: 11, color: 'var(--cyan)' }}>✓</span>}
+                  {isDisabled && (
+                    <span style={{ fontSize: 11, color: '#d97706', fontStyle: 'italic', fontWeight: 600 }}>
+                      (En otra etapa)
+                    </span>
+                  )}
                 </div>
               );
             })
