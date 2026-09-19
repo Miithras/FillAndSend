@@ -89,6 +89,54 @@ function safeInsertRows(
   }
 }
 
+function cleanBase64Png(dataUrl: string | null | undefined): string | null {
+  if (!dataUrl || typeof dataUrl !== 'string') return null;
+  const trimmed = dataUrl.trim();
+  const commaIdx = trimmed.indexOf(',');
+  const rawBase64 = (commaIdx !== -1 ? trimmed.substring(commaIdx + 1) : trimmed).replace(/\s+/g, '');
+  if (rawBase64.length < 50) return null;
+  return `data:image/png;base64,${rawBase64}`;
+}
+
+/**
+ * Inserta una firma mediante strict twoCellAnchor con editAs: 'oneCell'.
+ * Garantiza coordenadas enteras, referencias de medios PNG válidas en OpenXML
+ * y evita anclajes de dimensión cero o flotantes para compatibilidad total con
+ * visores web de correo (Gmail, Outlook Online, Office 365, Google Sheets).
+ */
+async function addSignatureTwoCellAnchor(
+  workbook: ExcelJS.Workbook,
+  ws: ExcelJS.Worksheet,
+  dataUrl: string | null | undefined,
+  rangeOrCell: string
+): Promise<void> {
+  const cleanData = cleanBase64Png(dataUrl);
+  if (!cleanData) return;
+
+  const rangeAddr = rangeOrCell.includes(':') ? rangeOrCell : `${rangeOrCell}:${rangeOrCell}`;
+  const [tlAddr, brAddr] = rangeAddr.split(':');
+  const tlCol = tlAddr.match(/[A-Z]+/)?.[0] || 'A';
+  const tlRow = parseInt(tlAddr.match(/\d+/)?.[0] || '1', 10);
+  const brCol = brAddr.match(/[A-Z]+/)?.[0] || tlCol;
+  const brRow = parseInt(brAddr.match(/\d+/)?.[0] || String(tlRow), 10);
+
+  const startColIdx = colToIndex(tlCol);
+  const endColIdx = colToIndex(brCol);
+  const startRowIdx = tlRow - 1;
+  const endRowIdx = brRow;
+
+  // Evitar anclas de dimensión cero o rangos invertidos
+  if (endColIdx < startColIdx || endRowIdx <= startRowIdx) return;
+
+  const imgId = workbook.addImage({ base64: cleanData, extension: 'png' });
+
+  ws.addImage(imgId, {
+    tl: { col: startColIdx, row: startRowIdx },
+    br: { col: endColIdx + 1, row: endRowIdx },
+    editAs: 'oneCell'
+  } as any);
+}
+
 async function addSignatureImage(
   workbook: ExcelJS.Workbook,
   ws: ExcelJS.Worksheet,
@@ -96,12 +144,7 @@ async function addSignatureImage(
   colLetter: string,
   row: number
 ) {
-  if (!dataUrl) return;
-  const imgId = workbook.addImage({ base64: dataUrl, extension: 'png' });
-  ws.addImage(imgId, {
-    tl: { col: colToIndex(colLetter) + 0.05, row: row - 1 + 0.05 },
-    ext: { width: 85, height: 26 }
-  } as any);
+  return addSignatureTwoCellAnchor(workbook, ws, dataUrl, `${colLetter}${row}`);
 }
 
 async function addSignatureImageFit(
@@ -110,26 +153,7 @@ async function addSignatureImageFit(
   dataUrl: string | null,
   rangeAddr: string
 ) {
-  if (!dataUrl) return;
-  const [tlAddr, brAddr] = rangeAddr.split(':');
-  const tlCol = tlAddr.match(/[A-Z]+/)?.[0] || 'A';
-  const tlRow = parseInt(tlAddr.match(/\d+/)?.[0] || '1', 10);
-  const brCol = brAddr.match(/[A-Z]+/)?.[0] || 'B';
-
-  const startColIdx = colToIndex(tlCol);
-  const endColIdx = colToIndex(brCol);
-  const numCols = endColIdx - startColIdx + 1;
-
-  // Firma de supervisor: altura duplicada (height * 2 = 52px vs 26px estándar)
-  // Centrado horizontal calculado según las columnas del rango y desplazamiento superior (top offset: 0.06)
-  // para centrado vertical exacto dentro de la fila de 45pt
-  const imgId = workbook.addImage({ base64: dataUrl, extension: 'png' });
-  const colOffset = Math.max(0.1, (numCols - 1.8) / 2);
-
-  ws.addImage(imgId, {
-    tl: { col: startColIdx + colOffset, row: tlRow - 1 + 0.06 },
-    ext: { width: 170, height: 52 }
-  } as any);
+  return addSignatureTwoCellAnchor(workbook, ws, dataUrl, rangeAddr);
 }
 
 function writeLeftCell(ws: ExcelJS.Worksheet, addr: string, value: any) {
@@ -306,7 +330,10 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     writeLeftCell(ws, 'D' + operariosBaseRow, formatearRut(rut0));
     writeLeftCell(ws, 'E' + operariosBaseRow, cargo0);
     writeLeftCell(ws, 'G' + operariosBaseRow, s0.tareas || '');
-    await addSignatureImage(workbook, ws, s0.firma, 'A', operariosBaseRow);
+    if (s0.firma) {
+      ws.getRow(operariosBaseRow).height = Math.max(ws.getRow(operariosBaseRow).height || 0, 32);
+      await addSignatureTwoCellAnchor(workbook, ws, s0.firma, `A${operariosBaseRow}`);
+    }
 
     if (state.signers.length > 1) {
       const extraSigners = state.signers.length - 1;
@@ -326,7 +353,10 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
         writeLeftCell(ws, 'D' + row, formatearRut(rut));
         writeLeftCell(ws, 'E' + row, cargo);
         writeLeftCell(ws, 'G' + row, s.tareas || '');
-        await addSignatureImage(workbook, ws, s.firma, 'A', row);
+        if (s.firma) {
+          ws.getRow(row).height = Math.max(ws.getRow(row).height || 0, 32);
+          await addSignatureTwoCellAnchor(workbook, ws, s.firma, `A${row}`);
+        }
       }
       signersShift = extraSigners;
     }
@@ -375,7 +405,7 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     if (cargoSup) {
       writeCenterCell(ws, 'D' + presenterRow, cargoSup);
     }
-    await addSignatureImageFit(workbook, ws, state.closingSig.firma, `F${presenterRow}:H${presenterRow}`);
+    await addSignatureTwoCellAnchor(workbook, ws, state.closingSig.firma, `F${presenterRow}:H${presenterRow}`);
   }
 
   // Restaurar anchos de columna originales
@@ -469,7 +499,8 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
     if (matchedSlot) {
       matchedSlot.used = true;
       if (s.firma) {
-        await addSignatureImage(workbook, ws, s.firma, matchedSlot.sigCol, matchedSlot.row);
+        ws.getRow(matchedSlot.row).height = Math.max(ws.getRow(matchedSlot.row).height || 0, 30);
+        await addSignatureTwoCellAnchor(workbook, ws, s.firma, `${matchedSlot.sigCol}${matchedSlot.row}`);
       }
     } else {
       unplacedSigners.push(s);
@@ -484,7 +515,8 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
       otroSlot.used = true;
       writeLeftCell(ws, otroSlot.nameCell, s.nombre);
       if (s.firma) {
-        await addSignatureImage(workbook, ws, s.firma, otroSlot.sigCol, otroSlot.row);
+        ws.getRow(otroSlot.row).height = Math.max(ws.getRow(otroSlot.row).height || 0, 30);
+        await addSignatureTwoCellAnchor(workbook, ws, s.firma, `${otroSlot.sigCol}${otroSlot.row}`);
       }
     } else {
       remainingSigners.push(s);
@@ -509,13 +541,15 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
       if (s1) {
         writeLeftCell(ws, `A${rowNum}`, s1.nombre);
         if (s1.firma) {
-          await addSignatureImage(workbook, ws, s1.firma, 'D', rowNum);
+          ws.getRow(rowNum).height = Math.max(ws.getRow(rowNum).height || 0, 30);
+          await addSignatureTwoCellAnchor(workbook, ws, s1.firma, `D${rowNum}`);
         }
       }
       if (s2) {
         writeLeftCell(ws, `E${rowNum}`, s2.nombre);
         if (s2.firma) {
-          await addSignatureImage(workbook, ws, s2.firma, 'H', rowNum);
+          ws.getRow(rowNum).height = Math.max(ws.getRow(rowNum).height || 0, 30);
+          await addSignatureTwoCellAnchor(workbook, ws, s2.firma, `H${rowNum}`);
         }
       } else {
         writeLeftCell(ws, `E${rowNum}`, 'Otro');
@@ -540,7 +574,7 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
   if (state.closingSig) {
     ws.getRow(presenterRow).height = 45;
     writeCenterCell(ws, `A${presenterRow}`, state.closingSig.nombre);
-    await addSignatureImageFit(workbook, ws, state.closingSig.firma, `E${presenterRow}:H${presenterRow}`);
+    await addSignatureTwoCellAnchor(workbook, ws, state.closingSig.firma, `E${presenterRow}:H${presenterRow}`);
   }
 
   // Restaurar anchos de columna originales
