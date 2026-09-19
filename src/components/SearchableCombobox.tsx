@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { FloatingDropdownPortal } from './FloatingDropdownPortal';
 
 interface SearchableComboboxProps {
   value: string;
@@ -28,21 +29,6 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
   useEffect(() => {
     setSearchQuery(value || '');
   }, [value]);
-
-  // Cerrar al hacer clic o tocar fuera del contenedor
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-    };
-  }, []);
 
   const normalize = (txt: string) =>
     (txt || '')
@@ -130,57 +116,59 @@ export const SearchableCombobox: React.FC<SearchableComboboxProps> = ({
         </div>
       )}
 
-      {isOpen && (
-        <div className="combobox-dropdown" role="listbox">
-          <div className="combobox-header">
-            <span>Opciones sugeridas ({filteredOptions.length})</span>
-            {searchQuery && <span style={{ color: 'var(--cyan)' }}>Filtrado</span>}
-          </div>
-
-          {filteredOptions.length === 0 ? (
-            <div className="combobox-empty" style={{ padding: '12px 14px', fontSize: 12, color: 'var(--slate)' }}>
-              <span>No se encontraron opciones predefinidas. Se guardará como texto personalizado.</span>
-            </div>
-          ) : (
-            filteredOptions.map((opt, idx) => {
-              const isSelected = normalize(value) === normalize(opt);
-              const isDisabled = isOptionDisabled ? isOptionDisabled(opt) : false;
-
-              return (
-                <div
-                  key={idx}
-                  className={`combobox-option ${isSelected ? 'already-added' : ''} ${isDisabled ? 'disabled' : ''}`}
-                  onClick={() => {
-                    if (!isDisabled) handleSelectOption(opt);
-                  }}
-                  role="option"
-                  aria-selected={isSelected}
-                  aria-disabled={isDisabled}
-                  style={{
-                    padding: '8px 12px',
-                    fontSize: '13px',
-                    lineHeight: '1.4',
-                    color: isDisabled ? 'var(--slate)' : isSelected ? 'var(--cyan)' : 'var(--navy)',
-                    fontWeight: isSelected ? 700 : 500,
-                    opacity: isDisabled ? 0.4 : 1,
-                    cursor: isDisabled ? 'not-allowed' : 'pointer',
-                    backgroundColor: isDisabled ? 'rgba(0, 30, 89, 0.03)' : undefined
-                  }}
-                  title={isDisabled ? (disabledHint || 'Esta opción ya fue seleccionada en otra etapa') : undefined}
-                >
-                  <span style={{ flex: 1, textDecoration: isDisabled ? 'line-through' : 'none' }}>{opt}</span>
-                  {isSelected && <span style={{ fontSize: 11, color: 'var(--cyan)' }}>✓</span>}
-                  {isDisabled && (
-                    <span style={{ fontSize: 11, color: '#d97706', fontStyle: 'italic', fontWeight: 600 }}>
-                      (En otra etapa)
-                    </span>
-                  )}
-                </div>
-              );
-            })
-          )}
+      <FloatingDropdownPortal
+        isOpen={isOpen}
+        anchorRef={containerRef}
+        onClose={() => setIsOpen(false)}
+      >
+        <div className="combobox-header">
+          <span>Opciones sugeridas ({filteredOptions.length})</span>
+          {searchQuery && <span style={{ color: 'var(--cyan)' }}>Filtrado</span>}
         </div>
-      )}
+
+        {filteredOptions.length === 0 ? (
+          <div className="combobox-empty" style={{ padding: '12px 14px', fontSize: 12, color: 'var(--slate)' }}>
+            <span>No se encontraron opciones predefinidas. Se guardará como texto personalizado.</span>
+          </div>
+        ) : (
+          filteredOptions.map((opt, idx) => {
+            const isSelected = normalize(value) === normalize(opt);
+            const isDisabled = isOptionDisabled ? isOptionDisabled(opt) : false;
+
+            return (
+              <div
+                key={idx}
+                className={`combobox-option ${isSelected ? 'already-added' : ''} ${isDisabled ? 'disabled' : ''}`}
+                onClick={() => {
+                  if (!isDisabled) handleSelectOption(opt);
+                }}
+                role="option"
+                aria-selected={isSelected}
+                aria-disabled={isDisabled}
+                style={{
+                  padding: '8px 12px',
+                  fontSize: '13px',
+                  lineHeight: '1.4',
+                  color: isDisabled ? 'var(--slate)' : isSelected ? 'var(--cyan)' : 'var(--navy)',
+                  fontWeight: isSelected ? 700 : 500,
+                  opacity: isDisabled ? 0.4 : 1,
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
+                  backgroundColor: isDisabled ? 'rgba(0, 30, 89, 0.03)' : undefined
+                }}
+                title={isDisabled ? (disabledHint || 'Esta opción ya fue seleccionada en otra etapa') : undefined}
+              >
+                <span style={{ flex: 1, textDecoration: isDisabled ? 'line-through' : 'none' }}>{opt}</span>
+                {isSelected && <span style={{ fontSize: 11, color: 'var(--cyan)' }}>✓</span>}
+                {isDisabled && (
+                  <span style={{ fontSize: 11, color: '#d97706', fontStyle: 'italic', fontWeight: 600 }}>
+                    (En otra etapa)
+                  </span>
+                )}
+              </div>
+            );
+          })
+        )}
+      </FloatingDropdownPortal>
     </div>
   );
 };

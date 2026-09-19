@@ -372,6 +372,10 @@ header.topbar {
   box-shadow: 0 2px 6px rgba(0, 30, 89, 0.02);
 }
 
+.accordion.open {
+  overflow: visible;
+}
+
 .accordion-head {
   display: flex;
   align-items: center;
@@ -406,11 +410,13 @@ header.topbar {
   display: none;
   padding: 0 16px 16px 16px;
   border-top: 1px solid var(--line);
+  overflow: visible;
 }
 
 .accordion.open .accordion-body {
   display: block;
   padding-top: 14px;
+  overflow: visible;
 }
 
 /* TRI TOGGLES & BULK HEADER CONTROLS */
@@ -601,6 +607,7 @@ header.topbar {
   padding: 12px;
   margin-bottom: 10px;
   position: relative;
+  overflow: visible;
 }
 
 .risk-row .del {
@@ -1358,6 +1365,7 @@ footer.fixed-bottom-sheet {
 .combobox-container {
   position: relative;
   width: 100%;
+  overflow: visible;
 }
 
 .combobox-input-wrap {
@@ -1368,24 +1376,24 @@ footer.fixed-bottom-sheet {
 
 .combobox-input-wrap input {
   width: 100%;
-  padding-right: 68px !important;
+  padding-right: 84px !important;
 }
 
 .combobox-actions {
   position: absolute;
-  right: 8px;
+  right: 14px;
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
 .combobox-btn {
-  background: transparent;
+  background: none;
   border: none;
   color: var(--slate);
   font-size: 14px;
   cursor: pointer;
-  padding: 6px;
+  padding: 4px 6px;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -1406,12 +1414,13 @@ footer.fixed-bottom-sheet {
   background: var(--bg-1);
   border: 1px solid var(--line);
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 30, 89, 0.12), 0 2px 6px rgba(0, 30, 89, 0.06);
+  box-shadow: 0 12px 32px rgba(0, 30, 89, 0.16), 0 2px 8px rgba(0, 30, 89, 0.08);
   max-height: 250px;
   overflow-y: auto;
-  z-index: 100;
+  z-index: 99999;
   overscroll-behavior: contain;
   padding: 4px 0;
+  animation: fadeIn 0.15s ease-out;
 }
 
 .combobox-header {
@@ -1707,21 +1716,6 @@ footer.fixed-bottom-sheet {
 .combobox-btn:hover {
   background: var(--bg-2);
   color: var(--navy);
-}
-
-.combobox-dropdown {
-  position: absolute;
-  top: calc(100% + 5px);
-  left: 0;
-  right: 0;
-  max-height: 250px;
-  overflow-y: auto;
-  background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  box-shadow: 0 10px 28px rgba(0, 30, 89, 0.14);
-  z-index: 120;
-  animation: fadeIn 0.15s ease-out;
 }
 
 .combobox-header {
