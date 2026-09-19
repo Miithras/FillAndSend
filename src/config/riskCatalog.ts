@@ -1,8 +1,8 @@
 export const RISK_ETAPAS = [
-  '1. Descarga y orden de insumos, materiales, herramientas y/o equipos.',
-  '2. Delimitar la zona de trabajo (cinta, conos y/o barras extensibles).',
-  '3. Instalación de tablero ductos y cargador.',
-  '4. Configuración y/o actualización del cargador de vehículo eléctrico.'
+  'Descarga y orden de insumos, materiales, herramientas y/o equipos.',
+  'Delimitar la zona de trabajo (cinta, conos y/o barras extensibles).',
+  'Instalación de tablero ductos y cargador.',
+  'Configuración y/o actualización del cargador de vehículo eléctrico.'
 ];
 
 export const RISK_EVENTOS = [
