@@ -76,16 +76,57 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
       {/* RESUMEN RIESGOS */}
       {doc.risks && doc.risks.enabled && (
         <div className="review-block">
-          <h4>Análisis de riesgos ({state.risks.length} etapas)</h4>
+          <h4>Análisis de riesgos ({state.risks.length} {state.risks.length === 1 ? 'etapa' : 'etapas'})</h4>
           {state.risks.length === 0 ? (
             <div className="review-row"><span className="k">Riesgos</span><span className="v">Sin registrar</span></div>
           ) : (
-            state.risks.map((r, i) => (
-              <div className="review-row review-row-risk" key={i}>
-                <span className="k">{r.etapa || `Etapa ${i + 1}`}</span>
-                <span className="v">{r.evento || '—'} <span className="arrow-sep">→</span> {r.medida || '—'}</span>
-              </div>
-            ))
+            state.risks.map((r, i) => {
+              const evs = Array.isArray(r.eventos) && r.eventos.length > 0
+                ? r.eventos
+                : (r.evento ? [r.evento] : []);
+              const meds = Array.isArray(r.medidas) && r.medidas.length > 0
+                ? r.medidas
+                : (r.medida ? [r.medida] : []);
+
+              return (
+                <div className="review-risk-card" key={i}>
+                  <div className="review-risk-title">
+                    <span>📌</span>
+                    <span>{r.etapa || `Etapa ${i + 1}`}</span>
+                  </div>
+
+                  <div className="review-risk-section">
+                    <div className="review-risk-section-label hazard">
+                      ⚠️ Peligros / Eventos ({evs.length})
+                    </div>
+                    {evs.length === 0 ? (
+                      <div style={{ fontSize: 12, color: 'var(--slate)', fontStyle: 'italic', paddingLeft: 12 }}>Sin peligros especificados</div>
+                    ) : (
+                      <ul className="review-risk-list">
+                        {evs.map((ev, eIdx) => (
+                          <li key={eIdx}>{ev}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div className="review-risk-section" style={{ marginTop: 8 }}>
+                    <div className="review-risk-section-label control">
+                      🛡️ Medidas de Control ({meds.length})
+                    </div>
+                    {meds.length === 0 ? (
+                      <div style={{ fontSize: 12, color: 'var(--slate)', fontStyle: 'italic', paddingLeft: 12 }}>Sin medidas especificadas</div>
+                    ) : (
+                      <ul className="review-risk-list">
+                        {meds.map((med, mIdx) => (
+                          <li key={mIdx}>{med}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       )}

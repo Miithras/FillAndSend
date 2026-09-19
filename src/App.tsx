@@ -181,7 +181,7 @@ export function App() {
       form: {},
       tri: {},
       multi: {},
-      risks: (id === 'art_normal' || id === 'art_mantencion') ? [{ etapa: '', evento: '', medida: '' }] : [],
+      risks: (id === 'art_normal' || id === 'art_mantencion') ? [{ etapa: '', eventos: [], medidas: [], evento: '', medida: '' }] : [],
       final: {},
       signers: [],
       closingSig: null
@@ -243,14 +243,27 @@ export function App() {
   const handleAddRisk = () => {
     setState(prev => ({
       ...prev,
-      risks: [...prev.risks, { etapa: '', evento: '', medida: '' }]
+      risks: [...prev.risks, { etapa: '', eventos: [], medidas: [], evento: '', medida: '' }]
     }));
   };
 
-  const handleChangeRisk = (index: number, field: keyof RiskItem, val: string) => {
+  const handleChangeRisk = (index: number, field: keyof RiskItem, val: any) => {
     setState(prev => {
       const nextRisks = [...prev.risks];
-      nextRisks[index] = { ...nextRisks[index], [field]: val };
+      const current = { ...nextRisks[index] };
+      (current as any)[field] = val;
+
+      if (field === 'eventos' && Array.isArray(val)) {
+        current.evento = val.join(' • ');
+      } else if (field === 'medidas' && Array.isArray(val)) {
+        current.medida = val.join(' • ');
+      } else if (field === 'evento' && typeof val === 'string') {
+        current.eventos = val ? [val] : [];
+      } else if (field === 'medida' && typeof val === 'string') {
+        current.medidas = val ? [val] : [];
+      }
+
+      nextRisks[index] = current;
       return { ...prev, risks: nextRisks };
     });
   };

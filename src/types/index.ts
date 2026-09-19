@@ -20,8 +20,10 @@ export interface MultiGroup {
 
 export interface RiskItem {
   etapa: string;
-  evento: string;
-  medida: string;
+  eventos: string[];
+  medidas: string[];
+  evento?: string;
+  medida?: string;
 }
 
 export interface SignerSchema {

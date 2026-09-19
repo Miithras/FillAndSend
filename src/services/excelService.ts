@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { AppState } from '../types';
+import { AppState, RiskItem } from '../types';
 import { DOC_TYPES } from '../config/docTypes';
 import { ART_CELLS, CHARLA_CELLS, colToIndex } from '../config/excelMappings';
 import { formatearRut } from '../utils/rut';
@@ -146,6 +146,49 @@ function writeCenterCell(ws: ExcelJS.Worksheet, addr: string, value: any) {
   cell.alignment = { ...cell.alignment, horizontal: 'center', vertical: 'middle', wrapText: true };
 }
 
+function writeRiskCell(ws: ExcelJS.Worksheet, addr: string, value: any) {
+  if (value === undefined || value === null || value === '') return;
+  const cell = ws.getCell(addr);
+  cell.value = value;
+  cell.alignment = { ...cell.alignment, horizontal: 'left', vertical: 'top', wrapText: true };
+}
+
+function formatBulletList(items?: string[] | string): string {
+  if (!items) return '';
+  if (Array.isArray(items)) {
+    const cleanItems = items.map(it => String(it).trim()).filter(Boolean);
+    if (cleanItems.length === 0) return '';
+    return cleanItems.map(it => (it.startsWith('•') ? it : `• ${it}`)).join('\n');
+  }
+  const str = String(items).trim();
+  if (!str) return '';
+  if (str.includes('\n')) {
+    return str
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map(it => (it.startsWith('•') ? it : `• ${it}`))
+      .join('\n');
+  }
+  return str.startsWith('•') ? str : `• ${str}`;
+}
+
+function adjustRiskRowHeight(ws: ExcelJS.Worksheet, rowNumber: number, r: RiskItem) {
+  const evs = (Array.isArray(r.eventos) && r.eventos.length > 0)
+    ? r.eventos
+    : (r.evento ? [r.evento] : []);
+  const meds = (Array.isArray(r.medidas) && r.medidas.length > 0)
+    ? r.medidas
+    : (r.medida ? [r.medida] : []);
+  
+  const count = Math.max(evs.length, meds.length, 1);
+  const row = ws.getRow(rowNumber);
+  const currentHeight = row.height || 24;
+  // Si hay más de 1 ítem, expandir la altura para que no se oculte texto (18pt por ítem)
+  const neededHeight = Math.max(currentHeight, count * 18);
+  row.height = neededHeight;
+}
+
 async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: ExcelJS.Worksheet) {
   const doc = DOC_TYPES[state.docType];
   const f = state.form;
@@ -218,9 +261,14 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
   // VI. Análisis de Riesgos en el Trabajo (dinámico con safeInsertRows)
   let insertedRiskRowsCount = 0;
   if (state.risks && state.risks.length > 0) {
-    if (state.risks[0].etapa) writeLeftCell(ws, 'A75', state.risks[0].etapa);
-    if (state.risks[0].evento) writeLeftCell(ws, 'C75', state.risks[0].evento);
-    if (state.risks[0].medida) writeLeftCell(ws, 'F75', state.risks[0].medida);
+    const r0 = state.risks[0];
+    const evs0 = (Array.isArray(r0.eventos) && r0.eventos.length > 0) ? r0.eventos : (r0.evento ? [r0.evento] : []);
+    const meds0 = (Array.isArray(r0.medidas) && r0.medidas.length > 0) ? r0.medidas : (r0.medida ? [r0.medida] : []);
+
+    if (r0.etapa) writeRiskCell(ws, 'A75', r0.etapa);
+    if (evs0.length > 0) writeRiskCell(ws, 'C75', formatBulletList(evs0));
+    if (meds0.length > 0) writeRiskCell(ws, 'F75', formatBulletList(meds0));
+    adjustRiskRowHeight(ws, 75, r0);
 
     if (state.risks.length > 1) {
       const extraRisks = state.risks.length - 1;
@@ -232,9 +280,13 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
         ws.mergeCells(`F${row}:H${row}`);
 
         const r = state.risks[i + 1];
-        if (r.etapa) writeLeftCell(ws, 'A' + row, r.etapa);
-        if (r.evento) writeLeftCell(ws, 'C' + row, r.evento);
-        if (r.medida) writeLeftCell(ws, 'F' + row, r.medida);
+        const evs = (Array.isArray(r.eventos) && r.eventos.length > 0) ? r.eventos : (r.evento ? [r.evento] : []);
+        const meds = (Array.isArray(r.medidas) && r.medidas.length > 0) ? r.medidas : (r.medida ? [r.medida] : []);
+
+        if (r.etapa) writeRiskCell(ws, 'A' + row, r.etapa);
+        if (evs.length > 0) writeRiskCell(ws, 'C' + row, formatBulletList(evs));
+        if (meds.length > 0) writeRiskCell(ws, 'F' + row, formatBulletList(meds));
+        adjustRiskRowHeight(ws, row, r);
       }
       insertedRiskRowsCount = extraRisks;
     }

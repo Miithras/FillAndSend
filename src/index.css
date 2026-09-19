@@ -623,6 +623,200 @@ header.topbar {
   margin-bottom: 0;
 }
 
+/* RISK TAG INPUT / MULTI-SELECT CHIPS */
+.risk-tag-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.risk-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.risk-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  max-width: 100%;
+  word-break: break-word;
+  animation: fadeInTag 0.15s ease-out;
+}
+
+@keyframes fadeInTag {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.risk-tag-chip.tag-hazard {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #b45309;
+}
+
+.risk-tag-chip.tag-control {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #047857;
+}
+
+[data-theme='dark'] .risk-tag-chip.tag-hazard,
+body.dark .risk-tag-chip.tag-hazard {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+}
+
+[data-theme='dark'] .risk-tag-chip.tag-control,
+body.dark .risk-tag-chip.tag-control {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #34d399;
+}
+
+.risk-tag-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.risk-tag-text {
+  flex: 1;
+}
+
+.risk-tag-remove {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: inherit;
+  opacity: 0.65;
+  transition: opacity 0.15s, background-color 0.15s;
+}
+
+.risk-tag-remove:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.risk-tag-combobox-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.risk-tag-add-btn {
+  background: var(--cyan);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.risk-tag-add-btn:hover {
+  opacity: 0.9;
+}
+
+.risk-tag-add-btn:active {
+  transform: scale(0.96);
+}
+
+.risk-tag-badge-count {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(0, 160, 184, 0.12);
+  color: var(--cyan);
+}
+
+/* RESUMEN DE RIESGOS EN REVIEW SCREEN */
+.review-risk-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.review-risk-card:last-child {
+  margin-bottom: 0;
+}
+
+.review-risk-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-risk-section {
+  margin-top: 6px;
+}
+
+.review-risk-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.review-risk-section-label.hazard {
+  color: #d97706;
+}
+
+.review-risk-section-label.control {
+  color: #059669;
+}
+
+[data-theme='dark'] .review-risk-section-label.hazard,
+body.dark .review-risk-section-label.hazard {
+  color: #fbbf24;
+}
+
+[data-theme='dark'] .review-risk-section-label.control,
+body.dark .review-risk-section-label.control {
+  color: #34d399;
+}
+
+.review-risk-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: var(--slate);
+  line-height: 1.45;
+}
+
+.review-risk-list li {
+  margin-bottom: 3px;
+}
+
+
 .add-row-btn {
   width: 100%;
   background: var(--bg-2);

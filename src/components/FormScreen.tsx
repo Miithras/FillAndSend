@@ -6,6 +6,7 @@ import { getTodayISODate } from '../services/storageService';
 import { RISK_ETAPAS, RISK_EVENTOS, RISK_MEDIDAS } from '../config/riskCatalog';
 import { SearchableCombobox } from './SearchableCombobox';
 import { DynamicOtroSection } from './DynamicOtroSection';
+import { RiskTagInput } from './RiskTagInput';
 
 interface FormScreenProps {
   state: AppState;
@@ -15,7 +16,7 @@ interface FormScreenProps {
   onBulkToggleTri: (keys: string[], val: 'SI' | 'NO' | 'NA') => void;
   onToggleMulti: (key: string) => void;
   onAddRisk: () => void;
-  onChangeRisk: (index: number, field: keyof RiskItem, val: string) => void;
+  onChangeRisk: (index: number, field: keyof RiskItem, val: any) => void;
   onDeleteRisk: (index: number) => void;
   onToggleAccordion: (key: string) => void;
   onBackToSelect: () => void;
@@ -407,44 +408,69 @@ export const FormScreen: React.FC<FormScreenProps> = ({
               <span className="chev">▾</span>
             </div>
             <div className="accordion-body">
-              {state.risks.map((r, i) => (
-                <div className="risk-row" key={i}>
-                  <button className="del" onClick={() => onDeleteRisk(i)} title="Eliminar fila">✕</button>
+              {state.risks.map((r, i) => {
+                const currentEventos = Array.isArray(r.eventos)
+                  ? r.eventos
+                  : (r.evento ? [r.evento] : []);
+                const currentMedidas = Array.isArray(r.medidas)
+                  ? r.medidas
+                  : (r.medida ? [r.medida] : []);
 
-                  <div className="field">
-                    <label>{doc.risks.qEtapa}</label>
-                    <SearchableCombobox
-                      value={r.etapa || ''}
-                      onChange={val => onChangeRisk(i, 'etapa', val)}
-                      options={RISK_ETAPAS}
-                      placeholder="Escribe o selecciona la etapa..."
-                      ariaLabel={doc.risks.qEtapa}
-                    />
-                  </div>
+                return (
+                  <div className="risk-row" key={i}>
+                    <button className="del" onClick={() => onDeleteRisk(i)} title="Eliminar etapa de riesgo">✕</button>
 
-                  <div className="field">
-                    <label>{doc.risks.qEvento}</label>
-                    <SearchableCombobox
-                      value={r.evento || ''}
-                      onChange={val => onChangeRisk(i, 'evento', val)}
-                      options={RISK_EVENTOS}
-                      placeholder="Escribe o selecciona el riesgo/evento..."
-                      ariaLabel={doc.risks.qEvento}
-                    />
-                  </div>
+                    <div className="field">
+                      <label>{doc.risks.qEtapa || 'Etapa del trabajo'}</label>
+                      <SearchableCombobox
+                        value={r.etapa || ''}
+                        onChange={val => onChangeRisk(i, 'etapa', val)}
+                        options={RISK_ETAPAS}
+                        placeholder="Escribe o selecciona la etapa..."
+                        ariaLabel={doc.risks.qEtapa}
+                      />
+                    </div>
 
-                  <div className="field">
-                    <label>{doc.risks.qMedida}</label>
-                    <SearchableCombobox
-                      value={r.medida || ''}
-                      onChange={val => onChangeRisk(i, 'medida', val)}
-                      options={RISK_MEDIDAS}
-                      placeholder="Escribe o selecciona la medida de control..."
-                      ariaLabel={doc.risks.qMedida}
-                    />
+                    <div className="field">
+                      <label>
+                        {doc.risks.qEvento || 'Peligros / Eventos no deseados'}
+                        {currentEventos.length > 0 && (
+                          <span className="risk-tag-badge-count" style={{ marginLeft: 8 }}>
+                            {currentEventos.length}
+                          </span>
+                        )}
+                      </label>
+                      <RiskTagInput
+                        items={currentEventos}
+                        onChange={items => onChangeRisk(i, 'eventos', items)}
+                        options={RISK_EVENTOS}
+                        placeholder="Buscar en catálogo o escribir peligro..."
+                        ariaLabel={doc.risks.qEvento}
+                        variant="hazard"
+                      />
+                    </div>
+
+                    <div className="field">
+                      <label>
+                        {doc.risks.qMedida || 'Medidas de control'}
+                        {currentMedidas.length > 0 && (
+                          <span className="risk-tag-badge-count" style={{ marginLeft: 8 }}>
+                            {currentMedidas.length}
+                          </span>
+                        )}
+                      </label>
+                      <RiskTagInput
+                        items={currentMedidas}
+                        onChange={items => onChangeRisk(i, 'medidas', items)}
+                        options={RISK_MEDIDAS}
+                        placeholder="Buscar en catálogo o escribir medida de control..."
+                        ariaLabel={doc.risks.qMedida}
+                        variant="control"
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <button className="add-row-btn" onClick={onAddRisk}>+ Agregar etapa de riesgo</button>
             </div>
           </div>

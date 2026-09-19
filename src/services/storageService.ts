@@ -32,7 +32,7 @@ export const INITIAL_STATE: AppState = {
   form: { fecha: getTodayISODate() },
   tri: {},
   multi: {},
-  risks: [{ etapa: '', evento: '', medida: '' }],
+  risks: [{ etapa: '', eventos: [], medidas: [], evento: '', medida: '' }],
   final: {},
   signers: [],
   closingSig: null,
@@ -51,11 +51,21 @@ export function saveDraft(state: AppState): void {
       form: state.form || {},
       tri: state.tri || {},
       multi: state.multi || {},
-      risks: (state.risks || []).slice(0, 50).map(r => ({
-        etapa: sanitizeTextInput(r.etapa, 300),
-        evento: sanitizeTextInput(r.evento, 300),
-        medida: sanitizeTextInput(r.medida, 500)
-      })),
+      risks: (state.risks || []).slice(0, 50).map(r => {
+        const evs = Array.isArray(r.eventos)
+          ? r.eventos.map(e => sanitizeTextInput(e, 300)).filter(Boolean)
+          : (r.evento ? [sanitizeTextInput(r.evento, 300)] : []);
+        const meds = Array.isArray(r.medidas)
+          ? r.medidas.map(m => sanitizeTextInput(m, 500)).filter(Boolean)
+          : (r.medida ? [sanitizeTextInput(r.medida, 500)] : []);
+        return {
+          etapa: sanitizeTextInput(r.etapa, 300),
+          eventos: evs,
+          medidas: meds,
+          evento: evs.join(' • '),
+          medida: meds.join(' • ')
+        };
+      }),
       final: state.final || {},
       signers: (state.signers || []).slice(0, 100).map(s => ({
         id: sanitizeTextInput(s.id, 50),
@@ -108,6 +118,26 @@ export function loadDraft(): AppState | null {
       sendStatus: 'idle',
       sendError: null
     };
+
+    if (Array.isArray(parsed.risks) && parsed.risks.length > 0) {
+      state.risks = parsed.risks.map((r: any) => {
+        const evs = Array.isArray(r.eventos)
+          ? r.eventos.filter((e: any) => typeof e === 'string' && e.trim().length > 0)
+          : (typeof r.evento === 'string' && r.evento.trim() ? [r.evento.trim()] : []);
+        const meds = Array.isArray(r.medidas)
+          ? r.medidas.filter((m: any) => typeof m === 'string' && m.trim().length > 0)
+          : (typeof r.medida === 'string' && r.medida.trim() ? [r.medida.trim()] : []);
+        return {
+          etapa: typeof r.etapa === 'string' ? r.etapa : '',
+          eventos: evs,
+          medidas: meds,
+          evento: r.evento || evs.join(' • '),
+          medida: r.medida || meds.join(' • ')
+        };
+      });
+    } else {
+      state.risks = [{ etapa: '', eventos: [], medidas: [], evento: '', medida: '' }];
+    }
 
     state.form = { ...(state.form || {}), fecha: getTodayISODate() }; // Forzar siempre fecha de hoy
     return state;
