@@ -367,13 +367,13 @@ header.topbar {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   margin-bottom: 12px;
-  overflow: hidden;
+  overflow: visible !important;
   background: var(--bg-1);
   box-shadow: 0 2px 6px rgba(0, 30, 89, 0.02);
 }
 
 .accordion.open {
-  overflow: visible;
+  overflow: visible !important;
 }
 
 .accordion-head {
@@ -410,13 +410,13 @@ header.topbar {
   display: none;
   padding: 0 16px 16px 16px;
   border-top: 1px solid var(--line);
-  overflow: visible;
+  overflow: visible !important;
 }
 
 .accordion.open .accordion-body {
   display: block;
   padding-top: 14px;
-  overflow: visible;
+  overflow: visible !important;
 }
 
 /* TRI TOGGLES & BULK HEADER CONTROLS */
@@ -607,7 +607,7 @@ header.topbar {
   padding: 12px;
   margin-bottom: 10px;
   position: relative;
-  overflow: visible;
+  overflow: visible !important;
 }
 
 .risk-row .del {
@@ -624,6 +624,8 @@ header.topbar {
 
 .risk-row .field {
   margin-bottom: 10px;
+  position: relative;
+  overflow: visible !important;
 }
 
 .risk-row .field:last-child {
@@ -1406,21 +1408,70 @@ footer.fixed-bottom-sheet {
   background: var(--bg-2);
 }
 
+/* UTILIDADES DE DROPDOWN / DROPUP */
+.max-h-56 {
+  max-height: 14rem !important;
+}
+
+.overflow-y-auto {
+  overflow-y: auto !important;
+}
+
+.z-50 {
+  z-index: 50 !important;
+}
+
+.bottom-full {
+  bottom: 100% !important;
+  top: auto !important;
+}
+
+.mb-1 {
+  margin-bottom: 0.25rem !important;
+  margin-top: 0 !important;
+}
+
+.top-full {
+  top: 100% !important;
+  bottom: auto !important;
+}
+
+.mt-1 {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0 !important;
+}
+
 .combobox-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
+  position: absolute !important;
   left: 0;
   right: 0;
+  width: 100%;
+  max-height: 14rem !important; /* max-h-56 = 224px */
+  overflow-y: auto !important;
+  z-index: 50 !important;
   background: var(--bg-1);
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0, 30, 89, 0.16), 0 2px 8px rgba(0, 30, 89, 0.08);
-  max-height: 250px;
-  overflow-y: auto;
-  z-index: 99999;
   overscroll-behavior: contain;
   padding: 4px 0;
   animation: fadeIn 0.15s ease-out;
+}
+
+.combobox-dropdown.bottom-full,
+.combobox-dropdown.dropup {
+  top: auto !important;
+  bottom: 100% !important;
+  margin-bottom: 0.25rem !important;
+  margin-top: 0 !important;
+}
+
+.combobox-dropdown.top-full,
+.combobox-dropdown.dropdown {
+  top: 100% !important;
+  bottom: auto !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0 !important;
 }
 
 .combobox-header {
