@@ -42,6 +42,18 @@ export const ART_CELLS = {
     'Derrames': 58, 'Aguas Servidas': 59, 'Escombros': 60, 'Emisión de Polvo': 61, 'Despuntes de PVC': 62, 'Restos de Cables': 63
   } as Record<string, number>,
 
+  impactos: {
+    'Alteración a la Calidad del Suelo': 58,
+    'Alteración a la Calidad del Aire': 59,
+    'Pérdida de Monumentos': 60
+  } as Record<string, number>,
+
+  medidasAmbientales: {
+    'Delimitar y Rotular Puntos de Acopio de Residuos': 58,
+    'Detener Excavaciones - Permisos y Autorización': 59,
+    'Elementos de Contención de Derrames': 60
+  } as Record<string, number>,
+
   visitas: {
     'Gerente General': [88, 'A'], 'Área Proyecto': [89, 'A'], 'Experto en Prevención CLIENTE': [90, 'A'],
     'Supervisor General': [91, 'A'], 'Encargado de Mantención de cliente o usuario': [92, 'A'],

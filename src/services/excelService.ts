@@ -355,44 +355,93 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     }
   }
 
-  // IV. Aspectos Ambientales
+  // IV. Aspectos Ambientales (Texto en Col A, Checkbox en Col B)
   Object.entries(C.aspectos).forEach(([item, baseRow]) => {
     if (state.multi['2:' + item]) {
-      writeCheckCell(ws, 'C' + (baseRow + shift));
+      writeCheckCell(ws, 'B' + (baseRow + shift));
     }
   });
 
+  // IV. Impactos Ambientales (Texto en Col D, Checkbox en Col E)
+  Object.entries(C.impactos).forEach(([item, baseRow]) => {
+    if (state.multi['3:' + item]) {
+      writeCheckCell(ws, 'E' + (baseRow + shift));
+    }
+  });
+
+  // IV. Medidas de Control Ambiental (Texto en Col G, Checkbox en Col H)
+  Object.entries(C.medidasAmbientales).forEach(([item, baseRow]) => {
+    if (state.multi['4:' + item]) {
+      writeCheckCell(ws, 'H' + (baseRow + shift));
+    }
+  });
+
+  // Manejo dinámico de "Otro" en Sección IV
   const aspectosOtroItems = (state.final.aspectosOtro || '')
     .split('\n')
     .map(s => s.trim())
     .filter(Boolean);
-
   if (aspectosOtroItems.length === 0 && state.multi['2:Otro']) {
-    writeCheckCell(ws, 'C' + (61 + shift));
-  } else if (aspectosOtroItems.length > 0) {
-    for (let i = 0; i < Math.min(aspectosOtroItems.length, 3); i++) {
-      const row = 61 + shift + i;
-      writeCheckCell(ws, 'C' + row);
-      writeLeftCell(ws, 'D' + row, aspectosOtroItems[i]);
-    }
+    aspectosOtroItems.push('Otro');
+  }
 
-    if (aspectosOtroItems.length > 3) {
-      const remaining = aspectosOtroItems.slice(3);
-      const extraRows = remaining.length;
-      const insertAt = 63 + shift + 1;
-      safeInsertRows(ws, insertAt, extraRows, 63 + shift);
-      for (let i = 0; i < extraRows; i++) {
-        const row = insertAt + i;
-        writeCheckCell(ws, 'C' + row);
-        writeLeftCell(ws, 'D' + row, remaining[i]);
-      }
-      shift += extraRows;
+  const impactosOtroItems = (state.final.impactosOtro || '')
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean);
+  if (impactosOtroItems.length === 0 && state.multi['3:Otro']) {
+    writeCheckCell(ws, 'E' + (61 + shift));
+  } else {
+    for (let i = 0; i < Math.min(impactosOtroItems.length, 3); i++) {
+      const row = 61 + shift + i;
+      writeLeftCell(ws, 'D' + row, impactosOtroItems[i]);
+      writeCheckCell(ws, 'E' + row, 'X');
     }
+  }
+
+  const medidasOtroItems = (state.final.medidasOtro || '')
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean);
+  if (medidasOtroItems.length === 0 && state.multi['4:Otro']) {
+    writeCheckCell(ws, 'H' + (61 + shift));
+  } else {
+    for (let i = 0; i < Math.min(medidasOtroItems.length, 3); i++) {
+      const row = 61 + shift + i;
+      writeLeftCell(ws, 'G' + row, medidasOtroItems[i]);
+      writeCheckCell(ws, 'H' + row, 'X');
+    }
+  }
+
+  const extraAspectos = aspectosOtroItems.length;
+  const extraImpactos = Math.max(0, impactosOtroItems.length - 3);
+  const extraMedidas = Math.max(0, medidasOtroItems.length - 3);
+  const extraSectionIVRows = Math.max(extraAspectos, extraImpactos, extraMedidas);
+
+  if (extraSectionIVRows > 0) {
+    const insertAt = 63 + shift + 1;
+    safeInsertRows(ws, insertAt, extraSectionIVRows, 63 + shift);
+    for (let i = 0; i < extraSectionIVRows; i++) {
+      const row = insertAt + i;
+      if (i < extraAspectos) {
+        writeLeftCell(ws, 'A' + row, aspectosOtroItems[i]);
+        writeCheckCell(ws, 'B' + row, 'X');
+      }
+      if (i < extraImpactos) {
+        writeLeftCell(ws, 'D' + row, impactosOtroItems[3 + i]);
+        writeCheckCell(ws, 'E' + row, 'X');
+      }
+      if (i < extraMedidas) {
+        writeLeftCell(ws, 'G' + row, medidasOtroItems[3 + i]);
+        writeCheckCell(ws, 'H' + row, 'X');
+      }
+    }
+    shift += extraSectionIVRows;
   }
 
   // V. Actividades de Alto Riesgo
   Object.entries(C.altoRiesgo).forEach(([item, [baseRow, col]]) => {
-    if (state.multi['3:' + item]) {
+    if (state.multi['5:' + item] || state.multi['3:' + item]) {
       writeCheckCell(ws, col + (baseRow + shift));
     }
   });
@@ -403,7 +452,7 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     .filter(Boolean);
   const altoRiesgoOtroRow = 70 + shift;
 
-  if (altoRiesgoOtroItems.length === 0 && state.multi['3:Otro']) {
+  if (altoRiesgoOtroItems.length === 0 && (state.multi['5:Otro'] || state.multi['3:Otro'])) {
     writeCheckCell(ws, 'A' + altoRiesgoOtroRow);
   } else if (altoRiesgoOtroItems.length > 0) {
     writeCheckCell(ws, 'A' + altoRiesgoOtroRow);
@@ -528,7 +577,7 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
 
   // IX. Visitas en Terreno (filas 88 a 92 + shift)
   Object.entries(C.visitas).forEach(([item, [baseRow, col]]) => {
-    if (item !== 'Otro' && state.multi['4:' + item]) {
+    if (item !== 'Otro' && (state.multi['6:' + item] || state.multi['4:' + item])) {
       writeCheckCell(ws, col + (baseRow + shift));
     }
   });
@@ -539,7 +588,7 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     .filter(Boolean);
   const visitasOtroRow = 92 + shift;
 
-  if (visitaOtroItems.length === 0 && state.multi['4:Otro']) {
+  if (visitaOtroItems.length === 0 && (state.multi['6:Otro'] || state.multi['4:Otro'])) {
     writeCheckCell(ws, 'D' + visitasOtroRow);
   } else if (visitaOtroItems.length > 0) {
     writeCheckCell(ws, 'D' + visitasOtroRow);

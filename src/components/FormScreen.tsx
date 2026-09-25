@@ -303,7 +303,7 @@ export const FormScreen: React.FC<FormScreenProps> = ({
         {/* PASO: EQUIPOS, EPP & ALTO RIESGO (ART) */}
         {currentStepId === 'equipos' && (
           <div>
-            {doc.multiGroups.slice(0, 4).map((group, mIdx) => (
+            {doc.multiGroups.slice(0, 6).map((group, mIdx) => (
               <div key={mIdx} className={`accordion ${state.uiOpen[`multi${mIdx}`] !== false ? 'open' : ''}`}>
                 <div className="accordion-head" onClick={() => onToggleAccordion(`multi${mIdx}`)}>
                   <h3>{group.title}</h3>
@@ -334,7 +334,9 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                           mIdx === 0 ? (state.final.eppOtro || '') :
                           mIdx === 1 ? (state.final.maquinasOtro || '') :
                           mIdx === 2 ? (state.final.aspectosOtro || '') :
-                          mIdx === 3 ? (state.final.altoRiesgoOtro || '') :
+                          mIdx === 3 ? (state.final.impactosOtro || '') :
+                          mIdx === 4 ? (state.final.medidasOtro || '') :
+                          mIdx === 5 ? (state.final.altoRiesgoOtro || '') :
                           (state.final[`otro_${mIdx}`] || '')
                         }
                         onChange={val => {
@@ -342,7 +344,9 @@ export const FormScreen: React.FC<FormScreenProps> = ({
                             mIdx === 0 ? 'eppOtro' :
                             mIdx === 1 ? 'maquinasOtro' :
                             mIdx === 2 ? 'aspectosOtro' :
-                            mIdx === 3 ? 'altoRiesgoOtro' :
+                            mIdx === 3 ? 'impactosOtro' :
+                            mIdx === 4 ? 'medidasOtro' :
+                            mIdx === 5 ? 'altoRiesgoOtro' :
                             `otro_${mIdx}`;
                           onChangeFinalField(fieldKey, val);
                         }}
@@ -492,38 +496,43 @@ export const FormScreen: React.FC<FormScreenProps> = ({
         {currentStepId === 'extra' && (
           <div>
             {/* IX. VISITAS EN TERRENO */}
-            {doc.multiGroups[4] && (
-              <div className={`accordion ${state.uiOpen.multi4 !== false ? 'open' : ''}`}>
-                <div className="accordion-head" onClick={() => onToggleAccordion('multi4')}>
-                  <h3>{doc.multiGroups[4].title}</h3>
-                  <span className="chev">▾</span>
-                </div>
-                <div className="accordion-body">
-                  <div className="chk-grid">
-                    {doc.multiGroups[4].items.map(item => {
-                      const key = `4:${item}`;
-                      const checked = !!state.multi[key];
-                      return (
-                        <div key={item} className={`chk ${checked ? 'checked' : ''}`} onClick={() => onToggleMulti(key)}>
-                          <input type="checkbox" checked={checked} readOnly />
-                          <span>{item}</span>
-                        </div>
-                      );
-                    })}
+            {(() => {
+              const visitasGroup = doc.multiGroups.find(g => g.title.includes('Visitas')) || doc.multiGroups[6];
+              const visitasIdx = visitasGroup ? doc.multiGroups.indexOf(visitasGroup) : 6;
+              if (!visitasGroup) return null;
+              return (
+                <div className={`accordion ${state.uiOpen[`multi${visitasIdx}`] !== false ? 'open' : ''}`}>
+                  <div className="accordion-head" onClick={() => onToggleAccordion(`multi${visitasIdx}`)}>
+                    <h3>{visitasGroup.title}</h3>
+                    <span className="chev">▾</span>
                   </div>
-                  {state.multi['4:Otro'] && (
-                    <div style={{ marginTop: 14 }}>
-                      <DynamicOtroSection
-                        value={state.final.visitaOtro || ''}
-                        onChange={val => onChangeFinalField('visitaOtro', val)}
-                        label="Especificar Visitas en Terreno (Otro)"
-                        placeholder="Ej: Pedro Morales (Inspector Técnico) y presiona ✓..."
-                      />
+                  <div className="accordion-body">
+                    <div className="chk-grid">
+                      {visitasGroup.items.map(item => {
+                        const key = `${visitasIdx}:${item}`;
+                        const checked = !!(state.multi[key] ?? state.multi[`4:${item}`]);
+                        return (
+                          <div key={item} className={`chk ${checked ? 'checked' : ''}`} onClick={() => onToggleMulti(key)}>
+                            <input type="checkbox" checked={checked} readOnly />
+                            <span>{item}</span>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
+                    {(state.multi[`${visitasIdx}:Otro`] || state.multi['4:Otro']) && (
+                      <div style={{ marginTop: 14 }}>
+                        <DynamicOtroSection
+                          value={state.final.visitaOtro || ''}
+                          onChange={val => onChangeFinalField('visitaOtro', val)}
+                          label="Especificar Visitas en Terreno (Otro)"
+                          placeholder="Ej: Pedro Morales (Inspector Técnico) y presiona ✓..."
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* VIII. INCIDENTES */}
             {doc.incidentes && doc.incidentes.enabled && (

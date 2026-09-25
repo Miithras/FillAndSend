@@ -97,8 +97,20 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
         ]
       },
       {
-        title: 'IV. Aspectos Ambientales identificados',
+        title: 'IV. Aspectos Ambientales',
         items: ['Derrames', 'Aguas Servidas', 'Escombros', 'Emisión de Polvo', 'Despuntes de PVC', 'Restos de Cables', 'Otro']
+      },
+      {
+        title: 'IV. Impactos Ambientales',
+        items: [
+          'Alteración a la Calidad del Suelo', 'Alteración a la Calidad del Aire', 'Pérdida de Monumentos', 'Otro'
+        ]
+      },
+      {
+        title: 'IV. Medidas de Control Ambiental',
+        items: [
+          'Delimitar y Rotular Puntos de Acopio de Residuos', 'Detener Excavaciones - Permisos y Autorización', 'Elementos de Contención de Derrames', 'Otro'
+        ]
       },
       {
         title: 'V. Actividades de Alto Riesgo',
@@ -195,8 +207,20 @@ export const DOC_TYPES: Record<DocTypeId, DocConfig> = {
         ]
       },
       {
-        title: 'IV. Aspectos Ambientales identificados',
+        title: 'IV. Aspectos Ambientales',
         items: ['Derrames', 'Aguas Servidas', 'Escombros', 'Emisión de Polvo', 'Despuntes de PVC', 'Restos de Cables', 'Otro']
+      },
+      {
+        title: 'IV. Impactos Ambientales',
+        items: [
+          'Alteración a la Calidad del Suelo', 'Alteración a la Calidad del Aire', 'Pérdida de Monumentos', 'Otro'
+        ]
+      },
+      {
+        title: 'IV. Medidas de Control Ambiental',
+        items: [
+          'Delimitar y Rotular Puntos de Acopio de Residuos', 'Detener Excavaciones - Permisos y Autorización', 'Elementos de Contención de Derrames', 'Otro'
+        ]
       },
       {
         title: 'V. Actividades de Alto Riesgo',
