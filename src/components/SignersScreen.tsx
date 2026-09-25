@@ -8,6 +8,7 @@ import { WorkerCombobox } from './WorkerCombobox';
 interface SignersScreenProps {
   state: AppState;
   onAddSigner: (signer: Signer) => void;
+  onUpdateSigner?: (index: number, updatedFields: Partial<Signer>) => void;
   onDeleteSigner: (index: number) => void;
   onClearAllSigners: () => void;
   onOpenSignModal: (index: number) => void;
@@ -20,6 +21,7 @@ interface SignersScreenProps {
 export const SignersScreen: React.FC<SignersScreenProps> = ({
   state,
   onAddSigner,
+  onUpdateSigner,
   onDeleteSigner,
   onClearAllSigners,
   onOpenSignModal,
@@ -94,13 +96,14 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
     if (doc.signerSchema.rutRequired) {
       trimmedRut = rut.trim();
       if (!trimmedRut) {
-        onShowToast('Completa el RUT', true);
+        onShowToast('Completa el RUT del trabajador', true);
         return;
       }
       if (!validarRut(trimmedRut)) {
-        onShowToast('El RUT ingresado no es válido', true);
+        onShowToast('El RUT ingresado no es válido (ej: 12.345.678-9)', true);
         return;
       }
+      trimmedRut = formatearRut(trimmedRut);
     }
 
     // Validar duplicados por RUT o Nombre
@@ -124,6 +127,8 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
       rut: trimmedRut,
       firma: null,
       timestamp: null,
+      cargo: (extraValues.cargo || '').trim(),
+      tareas: (extraValues.tareas || '').trim(),
       ...extraValues
     };
 
@@ -171,9 +176,8 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
         <>
           {state.signers.map((s, i) => {
             const signed = !!s.firma;
-            const roleLine = doc.signerSchema.extra.length
-              ? doc.signerSchema.extra.map(ef => s[ef.id]).filter(Boolean).join(' · ')
-              : '';
+            const rutFormatted = s.rut ? formatearRut(s.rut) : '';
+            const cargo = s.cargo || s.Cargo || '';
 
             return (
               <div
@@ -193,10 +197,29 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
                 <div className="signer-avatar">{signed ? '✓' : '👤'}</div>
                 <div className="signer-info">
                   <div className="name">{s.nombre || '(sin nombre)'}</div>
-                  {doc.signerSchema.rutRequired && (
-                    <div className="rut">{s.rut ? formatearRut(s.rut) : 'RUT pendiente'}</div>
+                  <div className="rut" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                    {doc.signerSchema.rutRequired && (
+                      <span>{rutFormatted || 'RUT pendiente'}</span>
+                    )}
+                    {cargo && (
+                      <span>· {cargo}</span>
+                    )}
+                  </div>
+
+                  {doc.signerSchema.extra.some(e => e.id === 'tareas') && (
+                    <div className="signer-task-row" onClick={e => e.stopPropagation()}>
+                      <span className="signer-task-label">Tareas:</span>
+                      <input
+                        type="text"
+                        className="signer-task-input"
+                        value={s.tareas || ''}
+                        placeholder="Asignar tareas específicas..."
+                        onClick={e => e.stopPropagation()}
+                        onChange={e => onUpdateSigner?.(i, { tareas: e.target.value })}
+                      />
+                    </div>
                   )}
-                  {roleLine && <div className="role">{roleLine}</div>}
+
                   <div className={`signer-helper ${signed ? 'signed' : ''}`}>
                     {signed ? (
                       <span>✓ Firma registrada {s.timestamp ? `(${s.timestamp})` : ''} · Toca para modificar</span>
@@ -276,7 +299,13 @@ export const SignersScreen: React.FC<SignersScreenProps> = ({
             type="text"
             value={extraValues[ef.id] || ''}
             onChange={e => setExtraValues({ ...extraValues, [ef.id]: e.target.value })}
-            placeholder={ef.label}
+            placeholder={
+              ef.id === 'cargo'
+                ? 'Ej: Técnico Eléctrico, Ayudante, Maestro...'
+                : ef.id === 'tareas'
+                ? 'Ej: Tendido de conductores, montaje cargador EV...'
+                : ef.label
+            }
           />
         </div>
       ))}

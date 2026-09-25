@@ -292,6 +292,14 @@ export function App() {
     showToast('Integrante agregado ✓');
   };
 
+  const handleUpdateSigner = (index: number, updatedFields: Partial<Signer>) => {
+    setState(prev => {
+      const next = [...prev.signers];
+      next[index] = { ...next[index], ...updatedFields };
+      return { ...prev, signers: next };
+    });
+  };
+
   const handleDeleteSigner = (index: number) => {
     const s = state.signers[index];
     if (s.firma) {
@@ -523,6 +531,7 @@ export function App() {
           <SignersScreen
             state={state}
             onAddSigner={handleAddSigner}
+            onUpdateSigner={handleUpdateSigner}
             onDeleteSigner={handleDeleteSigner}
             onClearAllSigners={handleClearAllSigners}
             onOpenSignModal={idx => setActiveSignerIndex(idx)}

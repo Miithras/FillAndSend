@@ -47,11 +47,11 @@ export const RISK_MEDIDAS = [
   'Aplicar 5 reglas de oro / Verificar ausencia de tensión',
   'Mantener extintor portátil de incendio cerca',
   'Estar atento al trabajo',
-  'Uso de manta y herramientas dieléctricas',
+  'Uso de herramientas dieléctricas',
   'Mantener concentración en cada tarea',
   'Instalar punto de hidratación / Uso de 1° y/o segunda capa',
   'Utilizar luz portátil en el casco',
   'Hacer pausas activas y/o rotaciones del personal',
-  'Uso manta dieléctrica, soplador con boquilla plástica y sellar la parte metálica de las brochas',
+  'Uso de soplador con boquilla plástica y sellar la parte metálica de las brochas',
   'Utilizar protección ocular y respiratoria'
 ];

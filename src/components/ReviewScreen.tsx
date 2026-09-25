@@ -140,12 +140,18 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
         <div className="review-block" key={s.id}>
           <h4>
             {s.nombre}
-            {doc.signerSchema.extra.map(ef => s[ef.id] ? ` — ${s[ef.id]}` : '').join('')}
+            {s.cargo ? ` — ${s.cargo}` : ''}
           </h4>
           {doc.signerSchema.rutRequired && (
             <div className="review-row">
               <span className="k">RUT</span>
               <span className="v mono">{formatearRut(s.rut)}</span>
+            </div>
+          )}
+          {s.tareas && (
+            <div className="review-row">
+              <span className="k">Tareas</span>
+              <span className="v">{s.tareas}</span>
             </div>
           )}
           <div className="review-row">

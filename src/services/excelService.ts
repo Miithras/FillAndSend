@@ -538,12 +538,13 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     const s0 = state.signers[0];
     const w0 = lookupWorker(s0.nombre);
     const rut0 = s0.rut || w0?.rut || '';
-    const cargo0 = s0.cargo || w0?.cargo || '';
+    const cargo0 = s0.cargo || (s0 as any)['cargo'] || (s0 as any)['Cargo'] || w0?.cargo || '';
+    const tareas0 = s0.tareas || (s0 as any)['tareas'] || (s0 as any)['Tareas asignadas'] || '';
 
     writeLeftCell(ws, 'B' + operariosBaseRow, s0.nombre);
-    writeLeftCell(ws, 'D' + operariosBaseRow, formatearRut(rut0));
+    writeLeftCell(ws, 'D' + operariosBaseRow, formatearRut(rut0) || rut0);
     writeLeftCell(ws, 'E' + operariosBaseRow, cargo0);
-    writeLeftCell(ws, 'G' + operariosBaseRow, s0.tareas || '');
+    writeLeftCell(ws, 'G' + operariosBaseRow, tareas0);
     if (s0.firma) {
       ws.getRow(operariosBaseRow).height = Math.max(ws.getRow(operariosBaseRow).height || 0, 32);
       await addSignatureTwoCellAnchor(workbook, ws, s0.firma, `A${operariosBaseRow}`);
@@ -561,12 +562,13 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
         const s = state.signers[i + 1];
         const w = lookupWorker(s.nombre);
         const rut = s.rut || w?.rut || '';
-        const cargo = s.cargo || w?.cargo || '';
+        const cargo = s.cargo || (s as any)['cargo'] || (s as any)['Cargo'] || w?.cargo || '';
+        const tareas = s.tareas || (s as any)['tareas'] || (s as any)['Tareas asignadas'] || '';
 
         writeLeftCell(ws, 'B' + row, s.nombre);
-        writeLeftCell(ws, 'D' + row, formatearRut(rut));
+        writeLeftCell(ws, 'D' + row, formatearRut(rut) || rut);
         writeLeftCell(ws, 'E' + row, cargo);
-        writeLeftCell(ws, 'G' + row, s.tareas || '');
+        writeLeftCell(ws, 'G' + row, tareas);
         if (s.firma) {
           ws.getRow(row).height = Math.max(ws.getRow(row).height || 0, 32);
           await addSignatureTwoCellAnchor(workbook, ws, s.firma, `A${row}`);
