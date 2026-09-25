@@ -355,26 +355,37 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     }
   }
 
-  // IV. Aspectos Ambientales (Texto en Col A, Checkbox en Col B)
+  // IV. Aspectos Ambientales (Checkbox en Col A, Texto en Col B)
   Object.entries(C.aspectos).forEach(([item, baseRow]) => {
     if (state.multi['2:' + item]) {
-      writeCheckCell(ws, 'B' + (baseRow + shift));
+      writeCheckCell(ws, 'A' + (baseRow + shift));
     }
   });
 
-  // IV. Impactos Ambientales (Texto en Col D, Checkbox en Col E)
+  // IV. Impactos Ambientales (Checkbox en Col D, Texto en Col E)
   Object.entries(C.impactos).forEach(([item, baseRow]) => {
     if (state.multi['3:' + item]) {
-      writeCheckCell(ws, 'E' + (baseRow + shift));
+      writeCheckCell(ws, 'D' + (baseRow + shift));
     }
   });
 
-  // IV. Medidas de Control Ambiental (Texto en Col G, Checkbox en Col H)
+  // IV. Medidas de Control Ambiental (Checkbox en Col G, Texto en Col H)
   Object.entries(C.medidasAmbientales).forEach(([item, baseRow]) => {
     if (state.multi['4:' + item]) {
-      writeCheckCell(ws, 'H' + (baseRow + shift));
+      writeCheckCell(ws, 'G' + (baseRow + shift));
     }
   });
+
+  // Limpiar espacios en blanco excesivos de la plantilla y asegurar wrapText en columnas de texto B, E, H
+  for (let r = 58 + shift; r <= 63 + shift; r++) {
+    ['B', 'E', 'H'].forEach(col => {
+      const cell = ws.getCell(col + r);
+      if (typeof cell.value === 'string') {
+        cell.value = cell.value.trim();
+      }
+      cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+    });
+  }
 
   // Manejo dinámico de "Otro" en Sección IV
   const aspectosOtroItems = (state.final.aspectosOtro || '')
@@ -390,12 +401,12 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     .map(s => s.trim())
     .filter(Boolean);
   if (impactosOtroItems.length === 0 && state.multi['3:Otro']) {
-    writeCheckCell(ws, 'E' + (61 + shift));
+    writeCheckCell(ws, 'D' + (61 + shift));
   } else {
     for (let i = 0; i < Math.min(impactosOtroItems.length, 3); i++) {
       const row = 61 + shift + i;
-      writeLeftCell(ws, 'D' + row, impactosOtroItems[i]);
-      writeCheckCell(ws, 'E' + row, 'X');
+      writeLeftCell(ws, 'E' + row, impactosOtroItems[i]);
+      writeCheckCell(ws, 'D' + row, 'X');
     }
   }
 
@@ -404,12 +415,12 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     .map(s => s.trim())
     .filter(Boolean);
   if (medidasOtroItems.length === 0 && state.multi['4:Otro']) {
-    writeCheckCell(ws, 'H' + (61 + shift));
+    writeCheckCell(ws, 'G' + (61 + shift));
   } else {
     for (let i = 0; i < Math.min(medidasOtroItems.length, 3); i++) {
       const row = 61 + shift + i;
-      writeLeftCell(ws, 'G' + row, medidasOtroItems[i]);
-      writeCheckCell(ws, 'H' + row, 'X');
+      writeLeftCell(ws, 'H' + row, medidasOtroItems[i]);
+      writeCheckCell(ws, 'G' + row, 'X');
     }
   }
 
@@ -424,16 +435,16 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     for (let i = 0; i < extraSectionIVRows; i++) {
       const row = insertAt + i;
       if (i < extraAspectos) {
-        writeLeftCell(ws, 'A' + row, aspectosOtroItems[i]);
-        writeCheckCell(ws, 'B' + row, 'X');
+        writeCheckCell(ws, 'A' + row, 'X');
+        writeLeftCell(ws, 'B' + row, aspectosOtroItems[i]);
       }
       if (i < extraImpactos) {
-        writeLeftCell(ws, 'D' + row, impactosOtroItems[3 + i]);
-        writeCheckCell(ws, 'E' + row, 'X');
+        writeCheckCell(ws, 'D' + row, 'X');
+        writeLeftCell(ws, 'E' + row, impactosOtroItems[3 + i]);
       }
       if (i < extraMedidas) {
-        writeLeftCell(ws, 'G' + row, medidasOtroItems[3 + i]);
-        writeCheckCell(ws, 'H' + row, 'X');
+        writeCheckCell(ws, 'G' + row, 'X');
+        writeLeftCell(ws, 'H' + row, medidasOtroItems[3 + i]);
       }
     }
     shift += extraSectionIVRows;
