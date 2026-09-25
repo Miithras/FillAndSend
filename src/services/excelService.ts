@@ -177,6 +177,13 @@ function writeRiskCell(ws: ExcelJS.Worksheet, addr: string, value: any) {
   cell.alignment = { ...cell.alignment, horizontal: 'left', vertical: 'top', wrapText: true };
 }
 
+function writeCheckCell(ws: ExcelJS.Worksheet, addr: string, val: string = 'X') {
+  const cell = ws.getCell(addr);
+  cell.value = val;
+  cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  cell.font = { name: 'Arial', size: 11 };
+}
+
 function formatBulletList(items?: string[] | string): string {
   if (!items) return '';
   if (Array.isArray(items)) {
@@ -236,9 +243,9 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     const row = C.triLeftRows[i];
     if (!row) return;
     const val = state.tri['0:' + item] || 'NA';
-    if (val === 'SI') ws.getCell('E' + row).value = 'X';
-    else if (val === 'NO') ws.getCell('F' + row).value = 'X';
-    else ws.getCell('G' + row).value = 'X';
+    if (val === 'SI') writeCheckCell(ws, 'E' + row);
+    else if (val === 'NO') writeCheckCell(ws, 'F' + row);
+    else writeCheckCell(ws, 'G' + row);
   });
 
   // I. Verificación previa — grupo 1 (filas 20 a 29)
@@ -246,59 +253,207 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     const row = C.triRightRows[i];
     if (!row) return;
     const val = state.tri['1:' + item] || 'NA';
-    if (val === 'SI') ws.getCell('E' + row).value = 'X';
-    else if (val === 'NO') ws.getCell('F' + row).value = 'X';
-    else ws.getCell('G' + row).value = 'X';
+    if (val === 'SI') writeCheckCell(ws, 'E' + row);
+    else if (val === 'NO') writeCheckCell(ws, 'F' + row);
+    else writeCheckCell(ws, 'G' + row);
   });
+
+  // Desplazamiento acumulado global para filas insertadas dinámicamente
+  let shift = 0;
 
   // II. EPP
   Object.entries(C.epp).forEach(([item, [row, col]]) => {
     if (state.multi['0:' + item]) {
-      ws.getCell(col + row).value = 'X';
-      if (item === 'Otro' && state.final.eppOtro) {
-        writeLeftCell(ws, 'B' + row, state.final.eppOtro);
-      }
+      writeCheckCell(ws, col + row);
     }
   });
 
-  // V. Actividades de Alto Riesgo
-  Object.entries(C.altoRiesgo).forEach(([item, [row, col]]) => {
-    if (state.multi['3:' + item]) {
-      ws.getCell(col + row).value = 'X';
-      if (item === 'Otro' && state.final.altoRiesgoOtro) {
-        const labelCol = col === 'A' ? 'B' : 'E';
-        writeLeftCell(ws, labelCol + row, state.final.altoRiesgoOtro);
+  // II. EPP — Ítems personalizados (Otro)
+  const eppOtroItems = (state.final.eppOtro || '')
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (eppOtroItems.length === 0 && state.multi['0:Otro']) {
+    writeCheckCell(ws, 'A46');
+  } else if (eppOtroItems.length > 0) {
+    writeCheckCell(ws, 'A46');
+    writeLeftCell(ws, 'B46', eppOtroItems[0]);
+
+    if (eppOtroItems.length > 1) {
+      writeCheckCell(ws, 'E46');
+      writeLeftCell(ws, 'F46', eppOtroItems[1]);
+    }
+
+    if (eppOtroItems.length > 2) {
+      const remaining = eppOtroItems.slice(2);
+      const extraRows = Math.ceil(remaining.length / 2);
+      safeInsertRows(ws, 47, extraRows, 46);
+      for (let i = 0; i < extraRows; i++) {
+        const row = 47 + i;
+        ws.mergeCells(row, 2, row, 4); // B:D
+        ws.mergeCells(row, 6, row, 8); // F:H
+        const leftItem = remaining[i * 2];
+        const rightItem = remaining[i * 2 + 1];
+        if (leftItem) {
+          writeCheckCell(ws, `A${row}`);
+          writeLeftCell(ws, `B${row}`, leftItem);
+        }
+        if (rightItem) {
+          writeCheckCell(ws, `E${row}`);
+          writeLeftCell(ws, `F${row}`, rightItem);
+        }
       }
+      shift += extraRows;
+    }
+  }
+
+  // III. Máquinas y/o Vehículos
+  Object.entries(C.maquinas).forEach(([item, [baseRow, col]]) => {
+    if (state.multi['1:' + item]) {
+      writeCheckCell(ws, col + (baseRow + shift));
     }
   });
+
+  const maquinasOtroItems = (state.final.maquinasOtro || '')
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean);
+  const maquinasOtroRow = 54 + shift;
+
+  if (maquinasOtroItems.length === 0 && state.multi['1:Otro']) {
+    writeCheckCell(ws, 'A' + maquinasOtroRow);
+  } else if (maquinasOtroItems.length > 0) {
+    writeCheckCell(ws, 'A' + maquinasOtroRow);
+    writeLeftCell(ws, 'B' + maquinasOtroRow, maquinasOtroItems[0]);
+
+    if (maquinasOtroItems.length > 1) {
+      writeCheckCell(ws, 'D' + maquinasOtroRow);
+      writeLeftCell(ws, 'E' + maquinasOtroRow, maquinasOtroItems[1]);
+    }
+
+    if (maquinasOtroItems.length > 2) {
+      const remaining = maquinasOtroItems.slice(2);
+      const extraRows = Math.ceil(remaining.length / 2);
+      safeInsertRows(ws, maquinasOtroRow + 1, extraRows, maquinasOtroRow);
+      for (let i = 0; i < extraRows; i++) {
+        const row = maquinasOtroRow + 1 + i;
+        ws.mergeCells(row, 2, row, 3); // B:C
+        ws.mergeCells(row, 5, row, 6); // E:F
+        const leftItem = remaining[i * 2];
+        const rightItem = remaining[i * 2 + 1];
+        if (leftItem) {
+          writeCheckCell(ws, `A${row}`);
+          writeLeftCell(ws, `B${row}`, leftItem);
+        }
+        if (rightItem) {
+          writeCheckCell(ws, `D${row}`);
+          writeLeftCell(ws, `E${row}`, rightItem);
+        }
+      }
+      shift += extraRows;
+    }
+  }
 
   // IV. Aspectos Ambientales
-  Object.entries(C.aspectos).forEach(([item, row]) => {
+  Object.entries(C.aspectos).forEach(([item, baseRow]) => {
     if (state.multi['2:' + item]) {
-      ws.getCell('C' + row).value = 'X';
-      if (item === 'Otro' && state.final.aspectosOtro) {
-        writeLeftCell(ws, 'D' + row, state.final.aspectosOtro);
-      }
+      writeCheckCell(ws, 'C' + (baseRow + shift));
     }
   });
 
+  const aspectosOtroItems = (state.final.aspectosOtro || '')
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (aspectosOtroItems.length === 0 && state.multi['2:Otro']) {
+    writeCheckCell(ws, 'C' + (61 + shift));
+  } else if (aspectosOtroItems.length > 0) {
+    for (let i = 0; i < Math.min(aspectosOtroItems.length, 3); i++) {
+      const row = 61 + shift + i;
+      writeCheckCell(ws, 'C' + row);
+      writeLeftCell(ws, 'D' + row, aspectosOtroItems[i]);
+    }
+
+    if (aspectosOtroItems.length > 3) {
+      const remaining = aspectosOtroItems.slice(3);
+      const extraRows = remaining.length;
+      const insertAt = 63 + shift + 1;
+      safeInsertRows(ws, insertAt, extraRows, 63 + shift);
+      for (let i = 0; i < extraRows; i++) {
+        const row = insertAt + i;
+        writeCheckCell(ws, 'C' + row);
+        writeLeftCell(ws, 'D' + row, remaining[i]);
+      }
+      shift += extraRows;
+    }
+  }
+
+  // V. Actividades de Alto Riesgo
+  Object.entries(C.altoRiesgo).forEach(([item, [baseRow, col]]) => {
+    if (state.multi['3:' + item]) {
+      writeCheckCell(ws, col + (baseRow + shift));
+    }
+  });
+
+  const altoRiesgoOtroItems = (state.final.altoRiesgoOtro || '')
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean);
+  const altoRiesgoOtroRow = 70 + shift;
+
+  if (altoRiesgoOtroItems.length === 0 && state.multi['3:Otro']) {
+    writeCheckCell(ws, 'A' + altoRiesgoOtroRow);
+  } else if (altoRiesgoOtroItems.length > 0) {
+    writeCheckCell(ws, 'A' + altoRiesgoOtroRow);
+    writeLeftCell(ws, 'B' + altoRiesgoOtroRow, altoRiesgoOtroItems[0]);
+
+    if (altoRiesgoOtroItems.length > 1) {
+      writeCheckCell(ws, 'D' + altoRiesgoOtroRow);
+      writeLeftCell(ws, 'E' + altoRiesgoOtroRow, altoRiesgoOtroItems[1]);
+    }
+
+    if (altoRiesgoOtroItems.length > 2) {
+      const remaining = altoRiesgoOtroItems.slice(2);
+      const extraRows = Math.ceil(remaining.length / 2);
+      safeInsertRows(ws, altoRiesgoOtroRow + 1, extraRows, altoRiesgoOtroRow);
+      for (let i = 0; i < extraRows; i++) {
+        const row = altoRiesgoOtroRow + 1 + i;
+        ws.mergeCells(row, 2, row, 3); // B:C
+        ws.mergeCells(row, 5, row, 7); // E:G
+        const leftItem = remaining[i * 2];
+        const rightItem = remaining[i * 2 + 1];
+        if (leftItem) {
+          writeCheckCell(ws, `A${row}`);
+          writeLeftCell(ws, `B${row}`, leftItem);
+        }
+        if (rightItem) {
+          writeCheckCell(ws, `D${row}`);
+          writeLeftCell(ws, `E${row}`, rightItem);
+        }
+      }
+      shift += extraRows;
+    }
+  }
+
   // VI. Análisis de Riesgos en el Trabajo (dinámico con safeInsertRows)
-  let insertedRiskRowsCount = 0;
+  const riskBaseRow = 75 + shift;
   if (state.risks && state.risks.length > 0) {
     const r0 = state.risks[0];
     const evs0 = (Array.isArray(r0.eventos) && r0.eventos.length > 0) ? r0.eventos : (r0.evento ? [r0.evento] : []);
     const meds0 = (Array.isArray(r0.medidas) && r0.medidas.length > 0) ? r0.medidas : (r0.medida ? [r0.medida] : []);
 
-    if (r0.etapa) writeRiskCell(ws, 'A75', r0.etapa);
-    if (evs0.length > 0) writeRiskCell(ws, 'C75', formatBulletList(evs0));
-    if (meds0.length > 0) writeRiskCell(ws, 'F75', formatBulletList(meds0));
-    adjustRiskRowHeight(ws, 75, r0);
+    if (r0.etapa) writeRiskCell(ws, 'A' + riskBaseRow, r0.etapa);
+    if (evs0.length > 0) writeRiskCell(ws, 'C' + riskBaseRow, formatBulletList(evs0));
+    if (meds0.length > 0) writeRiskCell(ws, 'F' + riskBaseRow, formatBulletList(meds0));
+    adjustRiskRowHeight(ws, riskBaseRow, r0);
 
     if (state.risks.length > 1) {
       const extraRisks = state.risks.length - 1;
-      safeInsertRows(ws, 76, extraRisks, 75);
+      safeInsertRows(ws, riskBaseRow + 1, extraRisks, riskBaseRow);
       for (let i = 0; i < extraRisks; i++) {
-        const row = 76 + i;
+        const row = riskBaseRow + 1 + i;
         ws.mergeCells(`A${row}:B${row}`);
         ws.mergeCells(`C${row}:E${row}`);
         ws.mergeCells(`F${row}:H${row}`);
@@ -312,13 +467,12 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
         if (meds.length > 0) writeRiskCell(ws, 'F' + row, formatBulletList(meds));
         adjustRiskRowHeight(ws, row, r);
       }
-      insertedRiskRowsCount = extraRisks;
+      shift += extraRisks;
     }
   }
 
   // VII. Operarios en terreno presentes (dinámico con safeInsertRows y lookup de RUT / Cargo)
-  const operariosBaseRow = 79 + insertedRiskRowsCount;
-  let signersShift = 0;
+  const operariosBaseRow = 79 + shift;
 
   if (state.signers.length > 0) {
     const s0 = state.signers[0];
@@ -358,18 +512,15 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
           await addSignatureTwoCellAnchor(workbook, ws, s.firma, `A${row}`);
         }
       }
-      signersShift = extraSigners;
+      shift += extraSigners;
     }
   }
-
-  // Desplazamiento acumulado para secciones posteriores
-  const shift = insertedRiskRowsCount + signersShift;
 
   // VIII. Incidentes (fila 83 + shift)
   const incidentesRow = 83 + shift;
   Object.entries(C.incidentes).forEach(([item]) => {
     if (state.multi['inc:' + item]) {
-      ws.getCell('A' + incidentesRow).value = 'X';
+      writeCheckCell(ws, 'A' + incidentesRow);
     }
   });
   if (state.final.incidenteDesc) writeLeftCell(ws, 'C' + incidentesRow, state.final.incidenteDesc);
@@ -377,16 +528,37 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
 
   // IX. Visitas en Terreno (filas 88 a 92 + shift)
   Object.entries(C.visitas).forEach(([item, [baseRow, col]]) => {
-    const row = baseRow + shift;
-    if (state.multi['4:' + item]) {
-      ws.getCell(col + row).value = 'X';
-      if (item === 'Otro' && state.final.visitaOtro) {
-        const labelCol = col === 'A' ? 'B' : 'E';
-        const formattedVisitas = state.final.visitaOtro.split('\n').filter(Boolean).join(', ');
-        writeLeftCell(ws, labelCol + row, formattedVisitas);
-      }
+    if (item !== 'Otro' && state.multi['4:' + item]) {
+      writeCheckCell(ws, col + (baseRow + shift));
     }
   });
+
+  const visitaOtroItems = (state.final.visitaOtro || '')
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean);
+  const visitasOtroRow = 92 + shift;
+
+  if (visitaOtroItems.length === 0 && state.multi['4:Otro']) {
+    writeCheckCell(ws, 'D' + visitasOtroRow);
+  } else if (visitaOtroItems.length > 0) {
+    writeCheckCell(ws, 'D' + visitasOtroRow);
+    writeLeftCell(ws, 'E' + visitasOtroRow, visitaOtroItems[0]);
+
+    if (visitaOtroItems.length > 1) {
+      const remaining = visitaOtroItems.slice(1);
+      const extraRows = remaining.length;
+      safeInsertRows(ws, visitasOtroRow + 1, extraRows, visitasOtroRow);
+      for (let i = 0; i < extraRows; i++) {
+        const row = visitasOtroRow + 1 + i;
+        ws.mergeCells(row, 2, row, 3); // B:C
+        ws.mergeCells(row, 5, row, 6); // E:F
+        writeCheckCell(ws, 'D' + row);
+        writeLeftCell(ws, 'E' + row, remaining[i]);
+      }
+      shift += extraRows;
+    }
+  }
 
   // X. Eventualidades (fila 95 + shift)
   const eventualidadesRow = 95 + shift;
@@ -434,7 +606,7 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
   // Clasificación de temas estándar
   Object.entries(C.clasificacion).forEach(([item, [row, col]]) => {
     if (state.multi['0:' + item]) {
-      ws.getCell(col + row).value = 'X';
+      writeCheckCell(ws, col + row);
     }
   });
 
@@ -446,7 +618,7 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
 
   let topicShift = 0;
   if (state.multi['0:Otro'] || customTopics.length > 0) {
-    ws.getCell('E19').value = 'X';
+    writeCheckCell(ws, 'E19');
     if (customTopics.length > 0) {
       writeLeftCell(ws, 'F19', customTopics[0]);
     }
@@ -458,7 +630,7 @@ async function fillCharlaWorkbook(state: AppState, workbook: ExcelJS.Workbook, w
       for (let i = 0; i < extraTopicsCount; i++) {
         const rowNum = 20 + i;
         ws.mergeCells(rowNum, 6, rowNum, 8); // F:H
-        ws.getCell(`E${rowNum}`).value = 'X';
+        writeCheckCell(ws, `E${rowNum}`);
         writeLeftCell(ws, `F${rowNum}`, customTopics[i + 1]);
       }
       topicShift = extraTopicsCount;

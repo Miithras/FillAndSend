@@ -23,9 +23,18 @@ export const ART_CELLS = {
     'Legionario': [43, 'E'], 'Protector solar': [44, 'E'], 'Barreras (cinta, conos, barras)': [45, 'E']
   } as Record<string, [number, string]>,
 
+  maquinas: {
+    'Camión Pluma': [49, 'A'], 'Alzahombre': [49, 'D'],
+    'Brazo Articulado': [50, 'A'], 'Grúa Horquilla': [50, 'D'],
+    'Traspaleta': [51, 'A'], 'Placa Compactadora': [51, 'D'],
+    'Cango': [52, 'A'], 'Trompo': [52, 'D'],
+    'Testiguera': [53, 'A'], 'Tronzadora': [53, 'D']
+  } as Record<string, [number, string]>,
+
   altoRiesgo: {
     'Conducción de Vehículos': [66, 'A'], 'Carga suspendida / Izaje': [67, 'A'], 'Trabajos de otras Empresas': [68, 'A'],
-    'Trabajos en caliente': [69, 'A'], 'Trabajos en Altura (sobre 1,5 mts.)': [66, 'D'], 'Espacios confinados y/o cerrados': [67, 'D'],
+    'Trabajos en Caliente': [69, 'A'], 'Trabajos en caliente': [69, 'A'],
+    'Trabajos en Altura (sobre 1,5 mts.)': [66, 'D'], 'Espacios confinados y/o cerrados': [67, 'D'],
     'Maquinaria en movimiento': [68, 'D'], 'Electricidad': [69, 'D']
   } as Record<string, [number, string]>,
 
