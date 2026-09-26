@@ -11,8 +11,59 @@ const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'diegoh2004@gmail.com').toLowerC
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Rayca3003';
 
 // Almacén persistente en backend para contraseñas actualizadas
-const DATA_DIR = path.join(process.cwd(), 'scratch');
-const UPDATED_USERS_FILE = path.join(DATA_DIR, 'updated_users.json');
+function getStoragePath(): string {
+  // En Vercel Serverless, process.cwd() es de solo lectura.
+  // /tmp es el único directorio con permisos de escritura.
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    return '/tmp/updated_users.json';
+  }
+  const localDir = path.join(process.cwd(), 'scratch');
+  if (!fs.existsSync(localDir)) {
+    try { fs.mkdirSync(localDir, { recursive: true }); } catch {}
+  }
+  return path.join(localDir, 'updated_users.json');
+}
+
+// Soporte opcional para Vercel KV / Upstash Redis si está configurado en variables de entorno
+async function getKvUser(email: string): Promise<UserDbRecord | null> {
+  const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!kvUrl || !kvToken) return null;
+  try {
+    const cleanKey = email.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
+    const res = await fetch(`${kvUrl}/get/rayca_pwd_${cleanKey}`, {
+      headers: { Authorization: `Bearer ${kvToken}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.result) {
+        return typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
+      }
+    }
+  } catch (err) {
+    console.warn('KV get error:', err);
+  }
+  return null;
+}
+
+async function setKvUser(record: UserDbRecord): Promise<void> {
+  const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!kvUrl || !kvToken) return;
+  try {
+    const cleanKey = record.email.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
+    await fetch(`${kvUrl}/set/rayca_pwd_${cleanKey}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${kvToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(JSON.stringify(record))
+    });
+  } catch (err) {
+    console.warn('KV set error:', err);
+  }
+}
 
 // --- RATE LIMITING (Protección de Fuerza Bruta) ---
 // Máximo 5 intentos fallidos en 15 minutos por IP o Email
@@ -133,16 +184,23 @@ interface UserDbRecord {
   must_change_password: boolean;
 }
 
-function getBackendUser(email: string): UserDbRecord | null {
+async function getBackendUser(email: string): Promise<UserDbRecord | null> {
   const cleanEmail = (email || '').toLowerCase().trim();
 
-  // 1. Verificar si es el usuario Administrador del .env
+  // 1. Verificar si existe en Vercel KV / Upstash (si está configurado)
+  const kvUser = await getKvUser(cleanEmail);
+  if (kvUser) {
+    return kvUser;
+  }
+
+  // 2. Verificar en overrides locales del backend
+  const overrides = loadUpdatedUsers();
+  if (overrides[cleanEmail]) {
+    return overrides[cleanEmail];
+  }
+
+  // 3. Verificar si es el usuario Administrador del .env
   if (cleanEmail === ADMIN_EMAIL) {
-    // Si el admin cambió su clave, buscar en overrides
-    const overrides = loadUpdatedUsers();
-    if (overrides[cleanEmail]) {
-      return overrides[cleanEmail];
-    }
     return {
       email: ADMIN_EMAIL,
       passwordHash: sha256(ADMIN_PASSWORD),
@@ -150,13 +208,7 @@ function getBackendUser(email: string): UserDbRecord | null {
     };
   }
 
-  // 2. Verificar en overrides de contraseñas actualizadas
-  const overrides = loadUpdatedUsers();
-  if (overrides[cleanEmail]) {
-    return overrides[cleanEmail];
-  }
-
-  // 3. Buscar en el archivo raíz allowedUsers.json (no empaquetado en cliente)
+  // 4. Buscar en el archivo raíz allowedUsers.json (no empaquetado en cliente)
   try {
     const rootAllowedPath = path.join(process.cwd(), 'allowedUsers.json');
     if (fs.existsSync(rootAllowedPath)) {
@@ -179,21 +231,26 @@ function getBackendUser(email: string): UserDbRecord | null {
 
 function loadUpdatedUsers(): Record<string, UserDbRecord> {
   try {
-    if (fs.existsSync(UPDATED_USERS_FILE)) {
-      return JSON.parse(fs.readFileSync(UPDATED_USERS_FILE, 'utf8'));
+    const filePath = getStoragePath();
+    if (fs.existsSync(filePath)) {
+      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
     }
-  } catch {}
+  } catch (err) {
+    console.warn('No se pudo leer updated_users.json:', err);
+  }
   return {};
 }
 
-function saveUpdatedUser(record: UserDbRecord) {
+async function saveUpdatedUser(record: UserDbRecord): Promise<void> {
+  // Guardar en KV si está disponible
+  await setKvUser(record);
+
+  // Guardar en almacenamiento de disco local /tmp
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
+    const filePath = getStoragePath();
     const current = loadUpdatedUsers();
     current[record.email] = record;
-    fs.writeFileSync(UPDATED_USERS_FILE, JSON.stringify(current, null, 2), 'utf8');
+    fs.writeFileSync(filePath, JSON.stringify(current, null, 2), 'utf8');
   } catch (err) {
     console.error('Error guardando usuario actualizado en backend:', err);
   }
@@ -318,7 +375,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Retardo leve constante para frustrar análisis de tiempo (timing attacks)
     await new Promise(r => setTimeout(r, 120));
 
-    const user = getBackendUser(cleanEmail);
+    const user = await getBackendUser(cleanEmail);
 
     if (!user) {
       registerFailedAttempt(rateKey);
@@ -347,6 +404,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       success: true,
+      token,
       user: {
         email: user.email,
         must_change_password: user.must_change_password
@@ -354,10 +412,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  // --- 2. ACCIÓN: VERIFICAR SESIÓN (COOKIE HTTPONLY) ---
+  // --- 2. ACCIÓN: VERIFICAR SESIÓN (COOKIE HTTPONLY / HEADER) ---
   if (action === 'session' && req.method === 'GET') {
     const cookies = parseCookies(req.headers.cookie);
-    const sessionToken = cookies.rayca_session;
+    const authHeader = req.headers.authorization || (req.headers['x-session-token'] as string) || '';
+    const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader;
+    const sessionToken = cookies.rayca_session || bearerToken;
 
     if (!sessionToken) {
       return res.status(200).json({ authenticated: false });
@@ -371,8 +431,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Comprobar si el usuario en backend actualizó su must_change_password
-    const backendUser = getBackendUser(verified.email);
-    const mustChange = backendUser ? backendUser.must_change_password : verified.must_change_password;
+    const backendUser = await getBackendUser(verified.email);
+    // Si la sesión verificada ya tiene must_change_password = false, NUNCA sobreescribir con true
+    const mustChange = verified.must_change_password === false
+      ? false
+      : (backendUser ? backendUser.must_change_password : verified.must_change_password);
 
     return res.status(200).json({
       authenticated: true,
@@ -386,13 +449,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // --- 3. ACCIÓN: CAMBIO DE CONTRASEÑA ---
   if (action === 'change-password' && req.method === 'POST') {
     const cookies = parseCookies(req.headers.cookie);
-    const sessionToken = cookies.rayca_session;
+    const authHeader = req.headers.authorization || (req.headers['x-session-token'] as string) || '';
+    const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.substring(7).trim() : authHeader;
+    const sessionToken = cookies.rayca_session || bearerToken;
     const verified = verifySession(sessionToken);
 
-    const { newPassword } = req.body || {};
+    const { email: bodyEmail, newPassword } = req.body || {};
     const cleanNewPass = (newPassword || '').trim();
+    const targetEmail = (verified?.email || bodyEmail || '').toLowerCase().trim();
 
-    if (!verified) {
+    if (!targetEmail) {
       return res.status(401).json({ error: 'Sesión no autorizada o expirada.' });
     }
 
@@ -406,25 +472,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const newHash = sha256(cleanNewPass);
 
-    saveUpdatedUser({
-      email: verified.email,
+    await saveUpdatedUser({
+      email: targetEmail,
       passwordHash: newHash,
       must_change_password: false
     });
 
     // Emitir nueva cookie con must_change_password = false
     const newToken = signSession({
-      email: verified.email,
+      email: targetEmail,
       must_change_password: false
     });
     setSessionCookie(res, newToken);
 
-    // Enviar notificación transaccional por correo en segundo plano
-    sendPasswordNotificationEmail(verified.email).catch(err => {
+    // Enviar notificación transaccional por correo y esperar resolución para asegurar entrega en lambdas
+    try {
+      await sendPasswordNotificationEmail(targetEmail);
+    } catch (err) {
       console.warn('Error enviando notificación de contraseña en backend:', err);
-    });
+    }
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, token: newToken });
   }
 
   // --- 4. ACCIÓN: LOGOUT ---
