@@ -578,15 +578,58 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     }
   }
 
-  // VIII. Incidentes (fila 83 + shift)
+  // VIII. Incidentes durante las actividades (filas 83 a 85 + shift)
   const incidentesRow = 83 + shift;
-  Object.entries(C.incidentes).forEach(([item]) => {
+  const incidentList = doc.incidentes?.items || [
+    'Incidente Seguridad',
+    'Incidente Ambiental',
+    'Incidente Calidad',
+    'Near Miss',
+    'Stop Work'
+  ];
+  const selectedIncidentes: string[] = [];
+  incidentList.forEach(item => {
     if (state.multi['inc:' + item]) {
-      writeCheckCell(ws, 'A' + incidentesRow);
+      selectedIncidentes.push(item);
     }
   });
-  if (state.final.incidenteDesc) writeLeftCell(ws, 'C' + incidentesRow, state.final.incidenteDesc);
-  if (state.final.accionCorrectiva) writeLeftCell(ws, 'F' + incidentesRow, state.final.accionCorrectiva);
+
+  if (selectedIncidentes.length > 0) {
+    const incidentText = selectedIncidentes.length === 1
+      ? selectedIncidentes[0]
+      : selectedIncidentes.map(it => `• ${it}`).join('\n');
+    const cellA = ws.getCell('A' + incidentesRow);
+    cellA.value = incidentText;
+    cellA.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+    cellA.font = { name: 'Arial', size: selectedIncidentes.length > 2 ? 9 : 10 };
+  }
+
+  if (state.final.incidenteDesc) {
+    const cellC = ws.getCell('C' + incidentesRow);
+    cellC.value = state.final.incidenteDesc;
+    cellC.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+    cellC.font = { name: 'Arial', size: 10 };
+  }
+
+  if (state.final.accionCorrectiva) {
+    const cellF = ws.getCell('F' + incidentesRow);
+    cellF.value = state.final.accionCorrectiva;
+    cellF.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+    cellF.font = { name: 'Arial', size: 10 };
+  }
+
+  // Ajustar altura de las 3 filas (83, 84, 85 + shift) para asegurar que ningún texto quede cortado
+  const descLines = (state.final.incidenteDesc || '').split('\n').length;
+  const actionLines = (state.final.accionCorrectiva || '').split('\n').length;
+  const incLines = selectedIncidentes.length;
+  const maxLines = Math.max(incLines, descLines, actionLines, 3);
+  const totalMinHeight = Math.max(50, maxLines * 18);
+  const heightPerRow = Math.max(18, Math.ceil(totalMinHeight / 3));
+
+  for (let r = 0; r < 3; r++) {
+    const targetRow = ws.getRow(incidentesRow + r);
+    targetRow.height = Math.max(targetRow.height || 0, heightPerRow);
+  }
 
   // IX. Visitas en Terreno (filas 88 a 92 + shift)
   Object.entries(C.visitas).forEach(([item, [baseRow, col]]) => {

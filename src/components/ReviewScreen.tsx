@@ -131,6 +131,37 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
         </div>
       )}
 
+      {/* RESUMEN INCIDENTES (SI HUBO) */}
+      {(() => {
+        const incItems = (doc.incidentes?.items || []).filter(item => state.multi[`inc:${item}`]);
+        const hasIncidentInfo = incItems.length > 0 || !!state.final.incidenteDesc || !!state.final.accionCorrectiva;
+        if (!hasIncidentInfo) return null;
+
+        return (
+          <div className="review-block" style={{ borderLeft: '4px solid var(--danger)', marginTop: 14 }}>
+            <h4 style={{ color: 'var(--danger)' }}>⚠️ VIII. Incidentes durante las actividades</h4>
+            {incItems.length > 0 && (
+              <div className="review-row">
+                <span className="k">Tipo(s)</span>
+                <span className="v" style={{ fontWeight: 600 }}>{incItems.join(', ')}</span>
+              </div>
+            )}
+            {state.final.incidenteDesc && (
+              <div className="review-row">
+                <span className="k">Descripción</span>
+                <span className="v">{state.final.incidenteDesc}</span>
+              </div>
+            )}
+            {state.final.accionCorrectiva && (
+              <div className="review-row">
+                <span className="k">Acción correctiva</span>
+                <span className="v">{state.final.accionCorrectiva}</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* RESUMEN FIRMAS INTEGRANTES */}
       <div className="section-title" style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 16, textTransform: 'uppercase', marginBottom: 10 }}>
         Firmas ({state.signers.filter(s => s.firma).length}/{state.signers.length})
