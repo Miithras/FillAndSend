@@ -88,13 +88,13 @@ export default defineConfig(({ mode }) => {
       apiDevMiddleware(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'templates/*.xlsx'],
+        includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'logo-rayca.png', 'templates/*.xlsx'],
         manifest: {
           name: 'RaycaDoc - RAYCA Ingeniería',
           short_name: 'RaycaDoc',
           description: 'RaycaDoc — Emisión y firma de ART Mantención, ART Normal y Charla Inicial',
           theme_color: '#001E59',
-          background_color: '#001E59',
+          background_color: '#FFFFFF',
           display: 'standalone',
           orientation: 'portrait',
           start_url: './',
@@ -102,13 +102,20 @@ export default defineConfig(({ mode }) => {
             {
               src: 'pwa-192x192.png',
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/png',
+              purpose: 'any'
             },
             {
               src: 'pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'any'
+            },
+            {
+              src: 'pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable'
             }
           ]
         },

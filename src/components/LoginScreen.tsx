@@ -46,6 +46,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onShow
     <div className="login-screen-wrap">
       <div className="login-card">
         <div className="login-brand">
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+            <img
+              src="/logo-rayca.png"
+              alt="RAYCA Logo"
+              style={{
+                width: 68,
+                height: 'auto',
+                filter: 'drop-shadow(0 4px 12px rgba(0, 180, 216, 0.25))'
+              }}
+            />
+          </div>
           <div className="login-badge">SEGURIDAD PWA</div>
           <h1 className="login-title">
             Rayca<span>Doc</span>
