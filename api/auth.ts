@@ -38,9 +38,10 @@ function getStoragePath(): string {
 
 // Soporte opcional para Vercel KV / Upstash Redis si está configurado en variables de entorno
 async function getKvUser(email: string): Promise<UserDbRecord | null> {
-  const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const rawUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!kvUrl || !kvToken) return null;
+  if (!rawUrl || !kvToken) return null;
+  const kvUrl = (rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`).replace(/\/$/, '');
   try {
     const cleanKey = email.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
     const res = await fetch(`${kvUrl}/get/rayca_pwd_${cleanKey}`, {
@@ -59,19 +60,27 @@ async function getKvUser(email: string): Promise<UserDbRecord | null> {
 }
 
 async function setKvUser(record: UserDbRecord): Promise<void> {
-  const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const rawUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!kvUrl || !kvToken) return;
+  if (!rawUrl || !kvToken) return;
+  const kvUrl = (rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`).replace(/\/$/, '');
   try {
     const cleanKey = record.email.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
-    await fetch(`${kvUrl}/set/rayca_pwd_${cleanKey}`, {
+    const recordStr = JSON.stringify(record);
+
+    // Formato estándar oficial Upstash / Vercel KV REST: POST / con ['SET', key, value]
+    const res = await fetch(kvUrl, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${kvToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(JSON.stringify(record))
+      body: JSON.stringify(['SET', `rayca_pwd_${cleanKey}`, recordStr])
     });
+
+    if (!res.ok) {
+      console.warn('KV set response not ok:', res.status, await res.text().catch(() => ''));
+    }
   } catch (err) {
     console.warn('KV set error:', err);
   }
