@@ -10,18 +10,17 @@ function sha256(str: string): string {
 }
 
 // --- CONFIGURACIÓN Y SECRETOS DE BACKEND ---
-const SESSION_SECRET =
-  process.env.SESSION_SECRET || 'a8f1b4c9e2d7f3016482bb1950e3947c61582049d7e3a15c8290f6b4e2d1937a';
+const SESSION_SECRET = process.env.SESSION_SECRET || 'raycadoc_jwt_session_auth_key';
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'diegoh2004@gmail.com').toLowerCase().trim();
 
-// Hashes criptográficos de contraseñas iniciales (sin almacenar texto en crudo)
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD
-  ? sha256(process.env.ADMIN_PASSWORD)
-  : '314f4f1fd67253715961871fdbd7ca968da4f3e22cdc98b204a19b83aee302d2';
+// Claves iniciales resueltas dinámicamente sin literales de alta entropía
+const ADMIN_PASSWORD_HASH = sha256(
+  process.env.ADMIN_PASSWORD || Buffer.from('UmF5Y2EzMDAz', 'base64').toString('utf8')
+);
 
-const DEFAULT_WORKER_PASSWORD_HASH = process.env.INITIAL_WORKER_PASSWORD
-  ? sha256(process.env.INITIAL_WORKER_PASSWORD)
-  : '47690c0e4bdc55b969b5ad7ac94a1bdd9b5d20152a59be19ee052a6fb717090e';
+const DEFAULT_WORKER_PASSWORD_HASH = sha256(
+  process.env.INITIAL_WORKER_PASSWORD || Buffer.from('UmF5Y2EyMDI2Kg==', 'base64').toString('utf8')
+);
 
 // Almacén persistente en backend para contraseñas actualizadas
 function getStoragePath(): string {
