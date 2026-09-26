@@ -170,11 +170,62 @@ function writeCenterCell(ws: ExcelJS.Worksheet, addr: string, value: any) {
   cell.alignment = { ...cell.alignment, horizontal: 'center', vertical: 'middle', wrapText: true };
 }
 
+function estimateVisualLines(text: string, charsPerLine: number): number {
+  if (!text) return 1;
+  const lines = text.split('\n');
+  let totalVisualLines = 0;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const words = trimmed.split(/\s+/);
+    let currentLineLength = 0;
+    let visualLinesInThisParagraph = 1;
+    for (const word of words) {
+      if (!word) continue;
+      const wordLen = word.length;
+      if (currentLineLength === 0) {
+        currentLineLength = wordLen;
+      } else if (currentLineLength + 1 + wordLen <= charsPerLine) {
+        currentLineLength += 1 + wordLen;
+      } else {
+        visualLinesInThisParagraph++;
+        currentLineLength = wordLen;
+      }
+    }
+    totalVisualLines += visualLinesInThisParagraph;
+  }
+  return Math.max(1, totalVisualLines);
+}
+
 function writeRiskCell(ws: ExcelJS.Worksheet, addr: string, value: any) {
   if (value === undefined || value === null || value === '') return;
-  const cell = ws.getCell(addr);
-  cell.value = value;
-  cell.alignment = { ...cell.alignment, horizontal: 'left', vertical: 'top', wrapText: true };
+  const colLetter = addr.match(/[A-Z]+/)?.[0] || 'A';
+  const rowNumber = parseInt(addr.match(/\d+/)?.[0] || '1', 10);
+
+  let endColLetter = colLetter;
+  if (colLetter === 'A') endColLetter = 'B';
+  else if (colLetter === 'C') endColLetter = 'E';
+  else if (colLetter === 'F') endColLetter = 'H';
+
+  const startIdx = colToIndex(colLetter);
+  const endIdx = colToIndex(endColLetter);
+
+  const mainCell = ws.getCell(addr);
+  mainCell.value = value;
+
+  for (let c = startIdx; c <= endIdx; c++) {
+    const cell = ws.getRow(rowNumber).getCell(c + 1);
+    cell.alignment = {
+      horizontal: 'left',
+      vertical: 'top',
+      wrapText: true
+    };
+    cell.font = {
+      name: 'Arial',
+      size: 10,
+      color: { argb: 'FF000000' }
+    };
+  }
 }
 
 function writeCheckCell(ws: ExcelJS.Worksheet, addr: string, val: string = 'X') {
@@ -184,24 +235,27 @@ function writeCheckCell(ws: ExcelJS.Worksheet, addr: string, val: string = 'X') 
   cell.font = { name: 'Arial', size: 11 };
 }
 
-function formatBulletList(items?: string[] | string): string {
+function formatRiskText(items?: string[] | string): string {
   if (!items) return '';
+  let list: string[] = [];
   if (Array.isArray(items)) {
-    const cleanItems = items.map(it => String(it).trim()).filter(Boolean);
-    if (cleanItems.length === 0) return '';
-    return cleanItems.map(it => (it.startsWith('•') ? it : `• ${it}`)).join('\n');
+    list = items.map(it => String(it || '').trim()).filter(Boolean);
+  } else {
+    const str = String(items).trim();
+    if (!str) return '';
+    if (str.includes('\n')) {
+      list = str.split('\n');
+    } else if (str.includes(' • ')) {
+      list = str.split(' • ');
+    } else {
+      list = [str];
+    }
   }
-  const str = String(items).trim();
-  if (!str) return '';
-  if (str.includes('\n')) {
-    return str
-      .split('\n')
-      .map(s => s.trim())
-      .filter(Boolean)
-      .map(it => (it.startsWith('•') ? it : `• ${it}`))
-      .join('\n');
-  }
-  return str.startsWith('•') ? str : `• ${str}`;
+
+  return list
+    .map(it => it.replace(/^[•\-\*]\s*/, '').trim())
+    .filter(Boolean)
+    .join('\n');
 }
 
 function adjustRiskRowHeight(ws: ExcelJS.Worksheet, rowNumber: number, r: RiskItem) {
@@ -211,13 +265,26 @@ function adjustRiskRowHeight(ws: ExcelJS.Worksheet, rowNumber: number, r: RiskIt
   const meds = (Array.isArray(r.medidas) && r.medidas.length > 0)
     ? r.medidas
     : (r.medida ? [r.medida] : []);
-  
-  const count = Math.max(evs.length, meds.length, 1);
+
+  const etapaText = (r.etapa || '').replace(/^[•\-\*]\s*/, '').trim();
+  const evsText = formatRiskText(evs);
+  const medsText = formatRiskText(meds);
+
+  // Estimación de líneas visuales según ancho de columnas combinadas:
+  // Col A:B ancho combinado ~21 caracteres
+  // Col C:E ancho combinado ~30 caracteres
+  // Col F:H ancho combinado ~30 caracteres
+  const linesEtapa = estimateVisualLines(etapaText, 21);
+  const linesEvs = estimateVisualLines(evsText, 30);
+  const linesMeds = estimateVisualLines(medsText, 30);
+
+  const maxVisualLines = Math.max(linesEtapa, linesEvs, linesMeds, 1);
+
+  // Cada línea visual en Arial 10 requiere ~18pt, con padding adicional para que no se corte
+  const neededHeight = Math.max(26, maxVisualLines * 18 + 6);
+
   const row = ws.getRow(rowNumber);
-  const currentHeight = row.height || 24;
-  // Si hay más de 1 ítem, expandir la altura para que no se oculte texto (18pt por ítem)
-  const neededHeight = Math.max(currentHeight, count * 18);
-  row.height = neededHeight;
+  row.height = Math.max(row.height || 0, neededHeight);
 }
 
 async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: ExcelJS.Worksheet) {
@@ -505,8 +572,8 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
     const meds0 = (Array.isArray(r0.medidas) && r0.medidas.length > 0) ? r0.medidas : (r0.medida ? [r0.medida] : []);
 
     if (r0.etapa) writeRiskCell(ws, 'A' + riskBaseRow, r0.etapa);
-    if (evs0.length > 0) writeRiskCell(ws, 'C' + riskBaseRow, formatBulletList(evs0));
-    if (meds0.length > 0) writeRiskCell(ws, 'F' + riskBaseRow, formatBulletList(meds0));
+    if (evs0.length > 0) writeRiskCell(ws, 'C' + riskBaseRow, formatRiskText(evs0));
+    if (meds0.length > 0) writeRiskCell(ws, 'F' + riskBaseRow, formatRiskText(meds0));
     adjustRiskRowHeight(ws, riskBaseRow, r0);
 
     if (state.risks.length > 1) {
@@ -523,8 +590,8 @@ async function fillArtWorkbook(state: AppState, workbook: ExcelJS.Workbook, ws: 
         const meds = (Array.isArray(r.medidas) && r.medidas.length > 0) ? r.medidas : (r.medida ? [r.medida] : []);
 
         if (r.etapa) writeRiskCell(ws, 'A' + row, r.etapa);
-        if (evs.length > 0) writeRiskCell(ws, 'C' + row, formatBulletList(evs));
-        if (meds.length > 0) writeRiskCell(ws, 'F' + row, formatBulletList(meds));
+        if (evs.length > 0) writeRiskCell(ws, 'C' + row, formatRiskText(evs));
+        if (meds.length > 0) writeRiskCell(ws, 'F' + row, formatRiskText(meds));
         adjustRiskRowHeight(ws, row, r);
       }
       shift += extraRisks;

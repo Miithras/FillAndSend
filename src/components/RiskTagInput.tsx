@@ -90,7 +90,7 @@ export const RiskTagInput: React.FC<RiskTagInputProps> = ({
 
   // Agregar ítem
   const handleAddItem = (itemToAdd: string) => {
-    const trimmed = itemToAdd.trim();
+    const trimmed = itemToAdd.replace(/^[•\-\*]\s*/, '').trim();
     if (!trimmed) return;
     if (isItemAdded(trimmed)) {
       setSearchQuery('');

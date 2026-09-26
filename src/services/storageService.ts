@@ -53,17 +53,17 @@ export function saveDraft(state: AppState): void {
       multi: state.multi || {},
       risks: (state.risks || []).slice(0, 50).map(r => {
         const evs = Array.isArray(r.eventos)
-          ? r.eventos.map(e => sanitizeTextInput(e, 300)).filter(Boolean)
-          : (r.evento ? [sanitizeTextInput(r.evento, 300)] : []);
+          ? r.eventos.map(e => sanitizeTextInput(e, 300).replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean)
+          : (r.evento ? [sanitizeTextInput(r.evento, 300).replace(/^[•\-\*]\s*/, '').trim()] : []);
         const meds = Array.isArray(r.medidas)
-          ? r.medidas.map(m => sanitizeTextInput(m, 500)).filter(Boolean)
-          : (r.medida ? [sanitizeTextInput(r.medida, 500)] : []);
+          ? r.medidas.map(m => sanitizeTextInput(m, 500).replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean)
+          : (r.medida ? [sanitizeTextInput(r.medida, 500).replace(/^[•\-\*]\s*/, '').trim()] : []);
         return {
-          etapa: sanitizeTextInput(r.etapa, 300),
+          etapa: sanitizeTextInput(r.etapa, 300).replace(/^[•\-\*]\s*/, '').trim(),
           eventos: evs,
           medidas: meds,
-          evento: evs.join(' • '),
-          medida: meds.join(' • ')
+          evento: evs.join('\n'),
+          medida: meds.join('\n')
         };
       }),
       final: state.final || {},
@@ -121,18 +121,27 @@ export function loadDraft(): AppState | null {
 
     if (Array.isArray(parsed.risks) && parsed.risks.length > 0) {
       state.risks = parsed.risks.map((r: any) => {
-        const evs = Array.isArray(r.eventos)
-          ? r.eventos.filter((e: any) => typeof e === 'string' && e.trim().length > 0)
-          : (typeof r.evento === 'string' && r.evento.trim() ? [r.evento.trim()] : []);
-        const meds = Array.isArray(r.medidas)
-          ? r.medidas.filter((m: any) => typeof m === 'string' && m.trim().length > 0)
-          : (typeof r.medida === 'string' && r.medida.trim() ? [r.medida.trim()] : []);
+        const parseRiskItems = (rawItems: any, fallbackStr?: any): string[] => {
+          let list: string[] = [];
+          if (Array.isArray(rawItems)) {
+            list = rawItems.map((e: any) => typeof e === 'string' ? e : '').filter(Boolean);
+          } else if (typeof fallbackStr === 'string' && fallbackStr.trim()) {
+            list = fallbackStr.split(/\n| • /);
+          }
+          return list
+            .map(s => s.replace(/^[•\-\*]\s*/, '').trim())
+            .filter(Boolean);
+        };
+
+        const evs = parseRiskItems(r.eventos, r.evento);
+        const meds = parseRiskItems(r.medidas, r.medida);
+
         return {
-          etapa: typeof r.etapa === 'string' ? r.etapa : '',
+          etapa: typeof r.etapa === 'string' ? r.etapa.replace(/^[•\-\*]\s*/, '').trim() : '',
           eventos: evs,
           medidas: meds,
-          evento: r.evento || evs.join(' • '),
-          medida: r.medida || meds.join(' • ')
+          evento: evs.join('\n'),
+          medida: meds.join('\n')
         };
       });
     } else {

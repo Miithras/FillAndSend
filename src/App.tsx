@@ -254,9 +254,9 @@ export function App() {
       (current as any)[field] = val;
 
       if (field === 'eventos' && Array.isArray(val)) {
-        current.evento = val.join(' • ');
+        current.evento = val.join('\n');
       } else if (field === 'medidas' && Array.isArray(val)) {
-        current.medida = val.join(' • ');
+        current.medida = val.join('\n');
       } else if (field === 'evento' && typeof val === 'string') {
         current.eventos = val ? [val] : [];
       } else if (field === 'medida' && typeof val === 'string') {
