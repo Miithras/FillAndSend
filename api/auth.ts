@@ -4,11 +4,24 @@ import fs from 'fs';
 import path from 'path';
 import nodemailer from 'nodemailer';
 
+// --- UTILIDADES DE CRIPTOGRAFÍA ---
+function sha256(str: string): string {
+  return crypto.createHash('sha256').update(str).digest('hex');
+}
+
 // --- CONFIGURACIÓN Y SECRETOS DE BACKEND ---
 const SESSION_SECRET =
-  process.env.SESSION_SECRET || 'rayca_secure_session_secret_2026_auth_jwt_key_default';
+  process.env.SESSION_SECRET || 'a8f1b4c9e2d7f3016482bb1950e3947c61582049d7e3a15c8290f6b4e2d1937a';
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'diegoh2004@gmail.com').toLowerCase().trim();
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Rayca3003';
+
+// Hashes criptográficos de contraseñas iniciales (sin almacenar texto en crudo)
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD
+  ? sha256(process.env.ADMIN_PASSWORD)
+  : '314f4f1fd67253715961871fdbd7ca968da4f3e22cdc98b204a19b83aee302d2';
+
+const DEFAULT_WORKER_PASSWORD_HASH = process.env.INITIAL_WORKER_PASSWORD
+  ? sha256(process.env.INITIAL_WORKER_PASSWORD)
+  : '47690c0e4bdc55b969b5ad7ac94a1bdd9b5d20152a59be19ee052a6fb717090e';
 
 // Almacén persistente en backend para contraseñas actualizadas
 function getStoragePath(): string {
@@ -111,10 +124,7 @@ function clearRateLimit(key: string) {
   rateLimitMap.delete(key);
 }
 
-// --- UTILIDADES DE CRIPTOGRAFÍA Y SESIÓN ---
-function sha256(str: string): string {
-  return crypto.createHash('sha256').update(str).digest('hex');
-}
+// --- UTILIDADES DE SESIÓN ---
 
 function signSession(data: { email: string; must_change_password: boolean }): string {
   const exp = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 días
@@ -203,7 +213,7 @@ async function getBackendUser(email: string): Promise<UserDbRecord | null> {
   if (cleanEmail === ADMIN_EMAIL) {
     return {
       email: ADMIN_EMAIL,
-      passwordHash: sha256(ADMIN_PASSWORD),
+      passwordHash: ADMIN_PASSWORD_HASH,
       must_change_password: false
     };
   }
@@ -217,7 +227,7 @@ async function getBackendUser(email: string): Promise<UserDbRecord | null> {
       if (found) {
         return {
           email: cleanEmail,
-          passwordHash: sha256(found.tempPassword || 'Rayca2026*'),
+          passwordHash: found.passwordHash || DEFAULT_WORKER_PASSWORD_HASH,
           must_change_password: found.must_change_password !== false
         };
       }
@@ -466,7 +476,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
     }
 
-    if (cleanNewPass === 'Rayca2026*' || cleanNewPass === 'Rayca3003') {
+    if (sha256(cleanNewPass) === DEFAULT_WORKER_PASSWORD_HASH || sha256(cleanNewPass) === ADMIN_PASSWORD_HASH) {
       return res.status(400).json({ error: 'Debes elegir una contraseña distinta a la clave temporal.' });
     }
 
