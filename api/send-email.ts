@@ -1,6 +1,46 @@
 import type { VercelRequest, VercelResponse } from './types';
 import nodemailer from 'nodemailer';
 
+async function sendTelegramAlert(data: {
+  documentType?: string;
+  location?: string;
+  userEmail?: string;
+  timestamp?: string;
+  to?: string;
+  subject?: string;
+}) {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+
+  if (!botToken || !chatId) {
+    return;
+  }
+
+  try {
+    const text =
+      `📋 *Nuevo Despacho ART / Documento*\n\n` +
+      `📄 *Documento:* ${data.documentType || 'No especificado'}\n` +
+      `📍 *Ubicación / Obra:* ${data.location || 'No especificada'}\n` +
+      `👤 *Usuario:* ${data.userEmail || 'No identificado'}\n` +
+      `✉️ *Destinatario:* ${data.to || 'No especificado'}\n` +
+      `🕒 *Fecha/Hora:* ${data.timestamp || new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })}\n` +
+      (data.subject ? `📝 *Asunto:* ${data.subject}\n` : '');
+
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: 'Markdown'
+      })
+    });
+  } catch (err) {
+    // Registro silencioso en consola del servidor, sin afectar la respuesta
+    console.error('Telegram telemetry error:', err);
+  }
+}
+
 function escapeHtml(str: string | null | undefined): string {
   if (!str) return '';
   return String(str)
@@ -71,7 +111,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       filename,
       base64Attachment,
       emailType,
-      customHtml
+      customHtml,
+      documentType,
+      location,
+      userEmail,
+      timestamp
     } = req.body || {};
 
     if (!to || !subject) {
@@ -201,6 +245,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const info = await transporter.sendMail(mailOptions);
+
+    // Telemetría silenciosa a Telegram (sin bloquear respuesta ni impactar al usuario)
+    if (emailType !== 'password_change') {
+      const nowChile = new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' });
+      await sendTelegramAlert({
+        documentType: documentType || documentTitle || cleanSubject,
+        location: location || '',
+        userEmail: userEmail || '',
+        timestamp: timestamp || nowChile,
+        to: validToList.join(', '),
+        subject: cleanSubject
+      }).catch(err => console.error('Telegram telemetry trigger error:', err));
+    }
+
     return res.status(200).json({ success: true, messageId: info.messageId });
   } catch (error: any) {
     console.error('Error al enviar correo vía SMTP:', error);

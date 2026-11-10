@@ -3,6 +3,7 @@ import { DOC_TYPES } from '../config/docTypes';
 import { buildExcelBlob, generateExcelFileName } from './excelService';
 import { formatearRut } from '../utils/rut';
 import { getTodayISODate } from './storageService';
+import { getCurrentUser } from './authService';
 
 export function buildSummaryText(state: AppState): string {
   const doc = DOC_TYPES[state.docType];
@@ -53,6 +54,9 @@ export async function sendDocumentEmail(state: AppState): Promise<void> {
 
   // Intentar primero a través de nuestra API Serverless con Bluehost SMTP
   try {
+    const currentUser = getCurrentUser();
+    const locationStr = state.form.obra || state.form.usuario || state.form.direccionObra || '';
+
     const resp = await fetch('/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,7 +67,10 @@ export async function sendDocumentEmail(state: AppState): Promise<void> {
         documentTitle: doc.label,
         summary,
         filename,
-        base64Attachment
+        base64Attachment,
+        documentType: doc.label,
+        location: locationStr,
+        userEmail: currentUser?.email || ''
       })
     });
 
